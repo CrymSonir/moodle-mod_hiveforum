@@ -1,0 +1,30 @@
+{{!
+    @template mod_hiveforum/discussion_card
+}}
+<a class="hiveforum-card {{#unread}}is-unread{{/unread}}" href="{{viewurl}}">
+    <div class="hiveforum-avatar">{{initials}}</div>
+    <div class="hiveforum-card-body">
+        <div class="hiveforum-card-title-row">
+            <span class="hiveforum-card-title">{{name}}</span>
+            <div class="hiveforum-badges">
+                {{#isquestion}}<span class="hiveforum-badge hiveforum-badge-warning">{{#str}}question, hiveforum{{/str}}</span>{{/isquestion}}
+                {{#resolved}}<span class="hiveforum-badge hiveforum-badge-success">{{#str}}resolved, hiveforum{{/str}}</span>{{/resolved}}
+                {{#pinned}}<span class="hiveforum-badge hiveforum-badge-neutral">{{#str}}pinned, hiveforum{{/str}}</span>{{/pinned}}
+            </div>
+        </div>
+        <p class="hiveforum-card-meta">{{authorname}} &middot; {{timeago}} &middot; {{replycount}} {{#str}}replies, hiveforum{{/str}}</p>
+
+        {{#hastags}}
+        <div class="hiveforum-tags">
+            {{#tags}}<span class="hiveforum-tag">{{.}}</span>{{/tags}}
+        </div>
+        {{/hastags}}
+
+        {{#hasreactions}}
+        <div class="hiveforum-reactions">
+            {{#reactions}}<span class="hiveforum-reaction-pill hiveforum-reaction-{{type}}">{{count}}</span>{{/reactions}}
+        </div>
+        {{/hasreactions}}
+    </div>
+    {{#unread}}<span class="hiveforum-unread-dot"></span>{{/unread}}
+</a>

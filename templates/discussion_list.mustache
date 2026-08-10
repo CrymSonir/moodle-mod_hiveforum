@@ -1,0 +1,43 @@
+{{!
+    @template mod_hiveforum/discussion_list
+
+    Modern discussion list: filters, search, discussion cards.
+
+    Context variables required:
+    * discussions - array of discussion card contexts
+    * strings - localized labels
+}}
+<div class="hiveforum-list" data-cmid="{{cmid}}">
+
+    <div class="hiveforum-toolbar">
+        <div class="hiveforum-filters" role="tablist">
+            <a href="?id={{cmid}}&filter=all" class="hiveforum-filter {{#filter_all}}active{{/filter_all}}">{{strings.all}}</a>
+            <a href="?id={{cmid}}&filter=unread" class="hiveforum-filter {{#filter_unread}}active{{/filter_unread}}">{{strings.unread}}</a>
+            <a href="?id={{cmid}}&filter=following" class="hiveforum-filter {{#filter_following}}active{{/filter_following}}">{{strings.following}}</a>
+        </div>
+        <form method="get" class="hiveforum-search">
+            <input type="hidden" name="id" value="{{cmid}}">
+            <input type="text" name="search" value="{{search}}" placeholder="{{strings.searchplaceholder}}">
+        </form>
+    </div>
+
+    <div class="hiveforum-cards">
+        {{#discussions}}
+            {{> mod_hiveforum/discussion_card }}
+        {{/discussions}}
+
+        {{^hasdiscussions}}
+            <div class="hiveforum-empty">
+                <p>{{strings.empty}}</p>
+            </div>
+        {{/hasdiscussions}}
+    </div>
+
+    <div class="hiveforum-footer">
+        <a href="{{newdiscussionurl}}" class="hiveforum-btn hiveforum-btn-primary">
+            <span class="hiveforum-btn-icon"></span>
+            {{strings.newdiscussion}}
+        </a>
+    </div>
+
+</div>

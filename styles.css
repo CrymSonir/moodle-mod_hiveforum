@@ -1,0 +1,571 @@
+/* mod_hiveforum modern styles */
+
+:root {
+    --hiveforum-primary: #0f172a;
+    --hiveforum-primary-light: #f1f5f9;
+    --hiveforum-accent: #3b82f6;
+    --hiveforum-accent-soft: #eff6ff;
+    --hiveforum-text-main: #1e293b;
+    --hiveforum-text-muted: #64748b;
+    --hiveforum-border: #e2e8f0;
+    --hiveforum-bg-card: #ffffff;
+    --hiveforum-bg-hover: #f8fafc;
+    --hiveforum-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --hiveforum-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --hiveforum-radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --hiveforum-primary: #f8fafc;
+        --hiveforum-primary-light: #1e293b;
+        --hiveforum-accent: #60a5fa;
+        --hiveforum-accent-soft: #172554;
+        --hiveforum-text-main: #f1f5f9;
+        --hiveforum-text-muted: #94a3b8;
+        --hiveforum-border: #334155;
+        --hiveforum-bg-card: #0f172a;
+        --hiveforum-bg-hover: #1e293b;
+    }
+}
+
+.hiveforum-list {
+    max-width: 850px;
+    margin: 2rem auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Toolbar & Filters */
+.hiveforum-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
+}
+
+.hiveforum-filters {
+    display: flex;
+    background: var(--hiveforum-primary-light);
+    padding: 4px;
+    border-radius: 10px;
+    gap: 2px;
+}
+
+.hiveforum-filter {
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 6px 16px;
+    border-radius: 8px;
+    color: var(--hiveforum-text-muted);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.hiveforum-filter:hover {
+    color: var(--hiveforum-text-main);
+    text-decoration: none;
+}
+
+.hiveforum-filter.active {
+    background: var(--hiveforum-bg-card);
+    color: var(--hiveforum-accent);
+    box-shadow: var(--hiveforum-shadow-sm);
+}
+
+.hiveforum-search input[type="text"] {
+    width: 260px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--hiveforum-border);
+    padding: 0 12px 0 36px;
+    font-size: 0.875rem;
+    background: var(--hiveforum-bg-card);
+    transition: all 0.2s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 18px;
+}
+
+.hiveforum-search input[type="text"]:focus {
+    outline: none;
+    border-color: var(--hiveforum-accent);
+    box-shadow: 0 0 0 3px var(--hiveforum-accent-soft);
+}
+
+/* Discussion Cards */
+.hiveforum-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hiveforum-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    background: var(--hiveforum-bg-card);
+    border: 1px solid var(--hiveforum-border);
+    border-radius: var(--hiveforum-radius);
+    padding: 1.25rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    position: relative;
+    box-shadow: var(--hiveforum-shadow-sm);
+}
+
+.hiveforum-card:hover {
+    border-color: var(--hiveforum-accent);
+    transform: translateY(-2px);
+    box-shadow: var(--hiveforum-shadow);
+    text-decoration: none;
+    color: inherit;
+}
+
+.hiveforum-card.is-unread {
+    border-left: 4px solid var(--hiveforum-accent);
+}
+
+.hiveforum-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--hiveforum-accent-soft);
+    color: var(--hiveforum-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.hiveforum-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.hiveforum-card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.hiveforum-badges {
+    display: flex;
+    gap: 4px;
+}
+
+.hiveforum-card-title {
+    font-weight: 600;
+    font-size: 1.0625rem;
+    color: var(--hiveforum-text-main);
+}
+
+.hiveforum-card-meta {
+    font-size: 0.875rem;
+    color: var(--hiveforum-text-muted);
+    margin-bottom: 12px;
+}
+
+/* Badges & Tags */
+.hiveforum-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.hiveforum-badge-warning { background: #fef3c7; color: #92400e; }
+.hiveforum-badge-success { background: #dcfce7; color: #166534; }
+.hiveforum-badge-neutral { background: var(--hiveforum-primary-light); color: var(--hiveforum-text-muted); }
+
+.hiveforum-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.hiveforum-tag {
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 20px;
+    background: var(--hiveforum-primary-light);
+    color: var(--hiveforum-text-muted);
+    font-weight: 500;
+}
+
+/* Reactions */
+.hiveforum-reactions {
+    display: flex;
+    gap: 8px;
+}
+
+.hiveforum-reaction-pill {
+    font-size: 0.8125rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--hiveforum-bg-hover);
+    border: 1px solid var(--hiveforum-border);
+    color: var(--hiveforum-text-main);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.hiveforum-reaction-pill::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.hiveforum-reaction-like::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 010-7.764c.259-.85 1.083-1.368 1.972-1.368h.908c.445 0 .72.498.523.898.157.32.275.657.351 1.006' /%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 010-7.764c.259-.85 1.083-1.368 1.972-1.368h.908c.445 0 .72.498.523.898.157.32.275.657.351 1.006' /%3E%3C/svg%3E");
+}
+
+.hiveforum-reaction-love::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z' /%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z' /%3E%3C/svg%3E");
+}
+
+.hiveforum-reaction-idea::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a6.623 6.623 0 01-3 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z' /%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a6.623 6.623 0 01-3 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z' /%3E%3C/svg%3E");
+}
+
+.hiveforum-reaction-pill.is-active {
+    background: var(--hiveforum-accent-soft);
+    border-color: var(--hiveforum-accent);
+    color: var(--hiveforum-accent);
+}
+
+/* Couleurs spécifiques aux réactions au survol ou si actives */
+.hiveforum-reaction-like:hover, .hiveforum-reaction-like.is-active { color: #3b82f6; border-color: #3b82f6; background-color: #eff6ff; }
+.hiveforum-reaction-love:hover, .hiveforum-reaction-love.is-active { color: #ef4444; border-color: #ef4444; background-color: #fef2f2; }
+.hiveforum-reaction-idea:hover, .hiveforum-reaction-idea.is-active { color: #eab308; border-color: #eab308; background-color: #fefce8; }
+
+@media (prefers-color-scheme: dark) {
+    .hiveforum-reaction-like:hover, .hiveforum-reaction-like.is-active { background-color: #172554; }
+    .hiveforum-reaction-love:hover, .hiveforum-reaction-love.is-active { background-color: #450a0a; }
+    .hiveforum-reaction-idea:hover, .hiveforum-reaction-idea.is-active { background-color: #422006; }
+}
+
+/* Thread & Posts */
+.hiveforum-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.hiveforum-post-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.hiveforum-replies {
+    margin-left: 1.5rem;
+    padding-left: 1.5rem;
+    border-left: 2px solid var(--hiveforum-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    transition: border-color 0.2s ease;
+}
+
+.hiveforum-replies:hover {
+    border-left-color: var(--hiveforum-accent);
+}
+
+.hiveforum-post {
+    display: flex;
+    gap: 12px;
+}
+
+.hiveforum-post-container {
+    flex: 1;
+}
+
+.hiveforum-post-body {
+    background: var(--hiveforum-bg-card);
+    border: 1px solid var(--hiveforum-border);
+    border-radius: var(--hiveforum-radius);
+    padding: 1.5rem;
+    box-shadow: var(--hiveforum-shadow-sm);
+    position: relative;
+}
+
+.hiveforum-post-body::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 20px;
+    width: 16px;
+    height: 16px;
+    background: var(--hiveforum-bg-card);
+    border-left: 1px solid var(--hiveforum-border);
+    border-bottom: 1px solid var(--hiveforum-border);
+    transform: rotate(45deg);
+    z-index: 1;
+}
+
+.hiveforum-replies .hiveforum-post-wrapper::after {
+    content: "";
+    position: absolute;
+    left: -1.5rem;
+    top: 28px;
+    width: 1.5rem;
+    height: 2px;
+    background: var(--hiveforum-border);
+}
+
+.hiveforum-replies:hover .hiveforum-post-wrapper::after {
+    background: var(--hiveforum-accent);
+}
+
+.hiveforum-post.is-accepted .hiveforum-post-body {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+
+.hiveforum-post.is-accepted .hiveforum-post-body::before {
+    background: #f0fdf4;
+    border-color: #22c55e;
+}
+
+.hiveforum-post-meta {
+    font-size: 0.875rem;
+    color: var(--hiveforum-text-muted);
+    margin-bottom: 1rem;
+}
+
+.hiveforum-post-author {
+    font-weight: 600;
+    color: var(--hiveforum-text-main);
+}
+
+.hiveforum-post-message {
+    line-height: 1.6;
+    color: var(--hiveforum-text-main);
+}
+
+.hiveforum-post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 1.25rem;
+}
+
+.hiveforum-post-reactions {
+    display: flex;
+    gap: 8px;
+}
+
+.hiveforum-btn-link {
+    background: none;
+    border: none;
+    color: var(--hiveforum-accent);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: none;
+}
+
+.hiveforum-btn-link:hover {
+    text-decoration: underline;
+}
+
+.hiveforum-post-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.hiveforum-action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--hiveforum-bg-hover);
+    border: 1px solid var(--hiveforum-border);
+    color: var(--hiveforum-text-muted);
+    transition: all 0.2s ease;
+}
+
+.hiveforum-action-icon:hover {
+    color: var(--hiveforum-accent);
+    border-color: var(--hiveforum-accent);
+    background: var(--hiveforum-accent-soft);
+    text-decoration: none;
+}
+
+.hiveforum-action-icon::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.hiveforum-action-reply::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3' /%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3' /%3E%3C/svg%3E");
+}
+
+.hiveforum-action-edit::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10' /%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10' /%3E%3C/svg%3E");
+}
+
+.hiveforum-action-delete::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0' /%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0' /%3E%3C/svg%3E");
+}
+
+.hiveforum-action-delete:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+@media (prefers-color-scheme: dark) {
+    .hiveforum-action-delete:hover {
+        background-color: #450a0a;
+    }
+}
+
+.hiveforum-delete-trigger {
+    color: #ef4444;
+}
+
+.hiveforum-delete-trigger:hover {
+    color: #b91c1c;
+}
+
+/* Reply Form */
+.hiveforum-reply-form {
+    margin-top: 3rem;
+    background: var(--hiveforum-bg-card);
+    border: 1px solid var(--hiveforum-border);
+    border-radius: var(--hiveforum-radius);
+    padding: 1.5rem;
+}
+
+.hiveforum-reply-form textarea {
+    width: 100%;
+    border: 1px solid var(--hiveforum-border);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.9375rem;
+    margin-bottom: 1rem;
+    resize: vertical;
+    transition: all 0.2s ease;
+}
+
+.hiveforum-reply-form textarea:focus {
+    outline: none;
+    border-color: var(--hiveforum-accent);
+    box-shadow: 0 0 0 3px var(--hiveforum-accent-soft);
+}
+
+/* Buttons */
+.hiveforum-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 10px 20px;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none !important;
+}
+
+.hiveforum-btn-primary {
+    background: var(--hiveforum-accent);
+    color: white !important;
+    border: none;
+}
+
+.hiveforum-btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+}
+
+.hiveforum-btn-icon {
+    display: inline-flex;
+    margin-right: 8px;
+    width: 20px;
+    height: 20px;
+    background-color: currentColor;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.5' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 4.5v15m7.5-7.5h-15' /%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.5' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 4.5v15m7.5-7.5h-15' /%3E%3C/svg%3E");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.hiveforum-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--hiveforum-border);
+}
+
+@media (max-width: 640px) {
+    .hiveforum-footer {
+        justify-content: center;
+    }
+}
+
+.hiveforum-unread-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--hiveforum-accent);
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .hiveforum-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .hiveforum-search input[type="text"] {
+        width: 100%;
+    }
+    .hiveforum-card {
+        padding: 1rem;
+    }
+}

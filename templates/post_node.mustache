@@ -1,0 +1,52 @@
+{{!
+    @template mod_hiveforum/post_node
+}}
+<div class="hiveforum-post-wrapper">
+    <div class="hiveforum-post {{#isaccepted}}is-accepted{{/isaccepted}}" data-postid="{{id}}">
+        <div class="hiveforum-avatar">{{initials}}</div>
+        <div class="hiveforum-post-container">
+            <div class="hiveforum-post-body">
+                <p class="hiveforum-post-meta">
+                    <span class="hiveforum-post-author">{{authorname}}</span> &middot; {{timeago}}
+                    {{#isaccepted}}<span class="hiveforum-badge hiveforum-badge-success">✓</span>{{/isaccepted}}
+                </p>
+                <div class="hiveforum-post-message" data-rawmessage="{{message}}">{{{message}}}</div>
+
+                <div class="hiveforum-post-footer">
+                    {{#canreact}}
+                    <div class="hiveforum-post-reactions">
+                        {{#reactions}}
+                        <button type="button"
+                                class="hiveforum-reaction-pill hiveforum-reaction-{{type}} {{#active}}is-active{{/active}}"
+                                data-action="hiveforum-react"
+                                data-postid="{{id}}"
+                                data-reactiontype="{{type}}"
+                                title="{{type}}">
+                            <span class="hiveforum-reaction-count">{{count}}</span>
+                        </button>
+                        {{/reactions}}
+                    </div>
+                    {{/canreact}}
+
+                    <div class="hiveforum-post-actions">
+                        <button class="hiveforum-action-icon hiveforum-action-reply hiveforum-reply-trigger" data-postid="{{id}}" title="{{#str}}reply, hiveforum{{/str}}"></button>
+                        {{#canedit}}
+                        <button class="hiveforum-action-icon hiveforum-action-edit hiveforum-edit-trigger" data-postid="{{id}}" title="{{#str}}edit, hiveforum{{/str}}"></button>
+                        {{/canedit}}
+                        {{#candelete}}
+                        <button class="hiveforum-action-icon hiveforum-action-delete hiveforum-delete-trigger" data-postid="{{id}}" title="{{#str}}delete, hiveforum{{/str}}"></button>
+                        {{/candelete}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{#hasreplies}}
+    <div class="hiveforum-replies">
+        {{#replies}}
+            {{> mod_hiveforum/post_node }}
+        {{/replies}}
+    </div>
+    {{/hasreplies}}
+</div>
