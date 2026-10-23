@@ -1,66 +1,87 @@
-# Hiveforum — plugin de forum moderne pour Moodle
+# Hiveforum : forum moderne pour Moodle 5.3
 
-Forum de discussion avec réactions, tags, suivi des non-lus et gamification légère (streaks de contribution), pensé pour remplacer `mod_forum` sur des cours où l'engagement est prioritaire.
+Forum de discussion pensé pour l'engagement : réactions, questions avec réponse acceptée, tags,
+suivi des non-lus, abonnement aux discussions avec notifications, et séries de contribution
+hebdomadaires. L'interface est écrite en **React + TypeScript** avec la nouvelle pile ESM de
+Moodle 5.3 (`js/esm`, `react_autoinit`, `@moodlehq/design-system`).
 
 ## Installation
 
-1. Copier le dossier `hiveforum` dans `<moodleroot>/mod/`
-2. Se connecter en tant qu'admin et aller sur **Administration du site > Notifications** pour lancer l'installation de la base de données (crée les tables listées dans `db/install.xml`)
-3. Ajouter l'activité "Hiveforum" depuis n'importe quel cours
+1. Copier le dossier dans `<moodle>/public/mod/hiveforum` (Moodle 5.1+ : sous `public/`).
+2. *Administration du site > Notifications* pour installer ou mettre à jour la base.
+   La mise à jour depuis la 0.1.0 est prise en charge (`db/upgrade.php`), avec reprise des données.
+3. Ajouter l'activité « Hiveforum » dans un cours.
 
-## Structure du plugin
+Les fichiers compilés `js/esm/build/` sont livrés : rien à compiler pour l'utiliser.
+
+## Fonctionnalités
+
+| | |
+|---|---|
+| **Liste** | filtres (toutes, non lues, suivies, questions ouvertes, les miennes) avec compteurs, recherche instantanée (titres et contenus), tags populaires cliquables, tri (activité, récentes, plus actives), « Afficher plus », « Tout marquer comme lu », URL synchronisée (rechargement, retour, partage de lien) |
+| **Nouvelle discussion** | panneau en ligne : type Discussion / Question, titre, tags (chips), éditeur Markdown ; lien vers l'éditeur complet (TinyMCE + fichiers) |
+| **Fil** | message d'ouverture, réponses imbriquées repliables, réponse en ligne sous n'importe quel message, édition en ligne, suppression avec confirmation (et des réponses qui en dépendent), lien permanent `#p123` |
+| **Questions** | « Accepter la réponse » (auteur ou modérateur), une seule réponse acceptée, raccourci vers elle sous la question, « Marquer comme résolue » / « Rouvrir » |
+| **Réactions** | 👍 ❤️ 💡 avec mise à jour optimiste |
+| **Temps réel** | vérification des nouvelles réponses toutes les 30 s quand l'onglet est visible, bandeau « 2 nouvelles réponses » |
+| **Suivi** | l'auteur et les participants suivent automatiquement la discussion ; notifications Moodle (popup, e-mail, app) envoyées par tâche ad hoc |
+| **Gamification** | série 🔥 de semaines consécutives avec contribution (en-tête et à côté du nom), badge « Enseignant » |
+| **Modération** | épingler, modifier ou supprimer tout message, renommer et retaguer une discussion |
+| **Accessibilité** | navigation clavier, `aria-pressed` / `aria-live`, focus visible, `prefers-reduced-motion`, rendu `<noscript>` côté serveur |
+| **Thème** | couleurs du thème (`--bs-*`), mode sombre Moodle (`data-bs-theme="dark"`), responsive |
+
+## Architecture
 
 ```
 hiveforum/
-├── version.php              Métadonnées du plugin (composant, version, dépendances)
-├── lib.php                  Callbacks core Moodle (add/update/delete_instance, supports, pluginfile)
-├── locallib.php             Logique métier (requêtes discussions, streaks)
-├── mod_form.php             Formulaire de configuration de l'activité
-├── view.php                 Page liste des discussions
-├── discuss.php               Page fil de discussion (thread)
-├── post.php                 Création de discussion / réponse
-├── index.php                Liste des instances dans un cours
-├── styles.css                Design des cartes/badges/réactions
-├── db/
-│   ├── install.xml          Schéma des tables (discussions, posts, réactions, tags, reads, streaks)
-│   ├── access.php            Capacités (permissions)
-│   ├── services.php          Déclaration du web service AJAX de réactions
-│   └── upgrade.php
-├── lang/en, lang/fr          Chaînes de langue
+├── view.php, discuss.php       Pages : montent les composants React (props initiales = 1re page de données)
+├── post.php                    Éditeur complet (TinyMCE + fichiers) et réponse sans JavaScript
 ├── classes/
-│   ├── event/                Événements (vue, création discussion/post, réaction)
-│   ├── external/             API externe toggle_reaction (AJAX)
-│   ├── form/                 Formulaire de nouvelle discussion
-│   └── output/renderer.php   Construction du contexte + rendu Mustache
-├── templates/                discussion_list, discussion_card, discussion_thread, reply_form
-└── amd/src/reactions.js      Toggle de réaction sans rechargement de page
+│   ├── local/forum.php         Activité chargée (instance, cm, contexte) + TOUTES les vérifications de droits
+│   ├── local/api.php           Logique métier (lecture/écriture), sans N+1
+│   ├── local/exporter.php      Mise en forme des données pour React et pour les web services
+│   ├── external/*.php          11 web services AJAX (core_external), structures partagées
+│   ├── output/                 forum_page / thread_page (react_component_renderable), renderer, chaînes
+│   ├── privacy/provider.php    API Privacy (RGPD) : export, suppression
+│   ├── task/notify_followers.php
+│   └── event/                  Événements (création, modification, suppression, réaction…)
+├── backup/moodle2/             Sauvegarde / restauration (avec données utilisateur)
+├── js/esm/src/                 Sources React/TypeScript
+│   ├── Forum.tsx, Thread.tsx   Composants racines
+│   ├── forum/, thread/         Sous-composants
+│   └── common/                 repository (web services), i18n, Composer, ReactionBar, Icon…
+├── js/esm/build/               Modules compilés (+ .dev.js utilisés en mode développeur)
+├── templates/                  Rendu <noscript>
+├── styles.css                  Design (variables Bootstrap du thème + couleur « miel »)
+└── tests/                      PHPUnit (API, web services, privacy, backup/restore) + générateur
 ```
 
-## Ce qui est fonctionnel dans ce squelette
+Les composants sont montés par `core/react_autoinit` à partir de
+`data-react-component="@moodle/lms/mod_hiveforum/Forum"`. Les chaînes de langue sont envoyées
+dans les props pour un affichage immédiat dans la bonne langue.
 
-- Création/édition/suppression d'instance, formulaire d'activité
-- Liste de discussions : filtres (toutes/non lu/suivies), recherche, badges (question/résolu/épinglé), tags, compteurs de réaction
-- Fil de discussion avec réponses et réactions AJAX (like/love/idea) sans rechargement
-- Création de discussion (avec tags et flag "question")
-- Réponse à une discussion
-- Suivi des lectures par utilisateur (non-lu)
-- Streaks de contribution hebdomadaires (`hiveforum_bump_streak`)
-- Permissions granulaires (`mod/hiveforum:*`)
-- Design moderne en CSS (cartes, badges, pastilles), dark mode basique
+## Développement
 
-## Ce qu'il reste à faire avant une mise en prod
+Depuis la racine de Moodle (avec `npm install`) :
 
-- **Backup/restore** (`backup/moodle2/`) — nécessaire pour dupliquer/sauvegarder des cours
-- **Éditeur riche** (Atto/TinyMCE) avec drag & drop d'images sur le formulaire de réponse rapide (actuellement `<textarea>` simple)
-- **Notifications** (mentions @utilisateur, digest d'activité) via le message system de Moodle
-- **Badges affichés dans l'UI** (actuellement seul le calcul du streak existe côté serveur)
-- **Privacy API** (`classes/privacy/provider.php`) — obligatoire pour la conformité RGPD avant publication sur le plugins directory Moodle
-- **Tests PHPUnit/Behat**
-- **Build AMD** : le JS est en ES module source (`amd/src/`), il faut le compiler (`grunt amd`) avant prod
-- Vue mobile affinée + pagination/infinite scroll sur la liste de discussions
+```bash
+npx grunt esm          # compile js/esm/src -> js/esm/build (tous les composants)
+npx grunt esm:watch    # recompilation à la volée
+vendor/bin/phpunit --testsuite mod_hiveforum_testsuite
+```
 
-## Notes techniques
+En mode développeur (`$CFG->cachejs = false`), Moodle sert les fichiers `.dev.js` avec sourcemaps.
+`js/esm/src/swizzle.json` déclare quels composants un thème peut surcharger (`scripts/swizzle.mjs`).
 
-- Compatible Moodle 4.0+ (`$plugin->requires = 2022041900`)
-- Suit les conventions officielles `mod_*` (voir https://moodledev.io/docs/apis/plugintypes/mod)
-- Les tables sont préfixées `hiveforum_*` pour éviter tout conflit avec `mod_forum`
+## Compatibilité
+
+Moodle 5.3 minimum (`$plugin->requires = 2026100500`) : l'interface repose sur la pile React/ESM
+introduite dans cette version.
+
+## Pistes pour la suite
+
+- Mode groupes séparés / visibles (désactivé pour l'instant, `FEATURE_GROUPS => false`)
+- Mentions `@utilisateur`, digest d'activité
+- Règles d'achèvement personnalisées (nombre de messages, réponse acceptée…)
+- Rapport d'engagement (la capacité `mod/hiveforum:viewreports` existe déjà)
+- Tests Behat

@@ -1,0 +1,21 @@
+{
+  "Forum": {"eject": "risky", "wrap": "safe"},
+  "Thread": {"eject": "risky", "wrap": "safe"},
+  "forum/DiscussionCard": {"eject": "safe", "wrap": "safe"},
+  "forum/NewDiscussion": {"eject": "safe", "wrap": "safe"},
+  "thread/PostItem": {"eject": "risky", "wrap": "safe"},
+  "thread/ThreadHeader": {"eject": "safe", "wrap": "safe"},
+  "common/Composer": {"eject": "safe", "wrap": "safe"},
+  "common/ConfirmDialog": {"eject": "safe", "wrap": "safe"},
+  "common/Icon": {"eject": "safe", "wrap": "safe"},
+  "common/ReactionBar": {"eject": "safe", "wrap": "safe"},
+  "common/TagInput": {"eject": "safe", "wrap": "safe"},
+  "common/UserAvatar": {"eject": "safe", "wrap": "safe"},
+  "common/i18n": {"eject": "prohibited", "wrap": "prohibited"},
+  "common/repository": {"eject": "prohibited", "wrap": "risky"},
+  "common/time": {"eject": "safe", "wrap": "safe"},
+  "common/notify": {"eject": "prohibited", "wrap": "risky"},
+  "common/types": {"eject": "prohibited", "wrap": "prohibited"},
+  "thread/context": {"eject": "prohibited", "wrap": "prohibited"},
+  "thread/tree": {"eject": "prohibited", "wrap": "risky"}
+}

@@ -1,48 +1,48 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * A discussion thread.
+ *
+ * @package    mod_hiveforum
+ * @copyright  2026 Hiveforum contributors
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
-require_once(__DIR__ . '/lib.php');
-require_once(__DIR__ . '/locallib.php');
 
-$d = required_param('d', PARAM_INT); // Discussion id.
+use mod_hiveforum\local\api;
+use mod_hiveforum\local\forum;
 
-$discussion = $DB->get_record('hiveforum_discussions', ['id' => $d], '*', MUST_EXIST);
-$hiveforum = $DB->get_record('hiveforum', ['id' => $discussion->hiveforum], '*', MUST_EXIST);
-$cm = get_coursemodule_from_instance('hiveforum', $hiveforum->id, $hiveforum->course, false, MUST_EXIST);
-$course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
+$d = required_param('d', PARAM_INT);
 
-require_login($course, true, $cm);
-$context = context_module::instance($cm->id);
-require_capability('mod/hiveforum:view', $context);
+[$forum, $discussion] = forum::from_discussion_id($d);
+require_login($forum->course, true, $forum->cm);
+require_capability('mod/hiveforum:view', $forum->context);
 
-$PAGE->set_url('/mod/hiveforum/discuss.php', ['d' => $d]);
-$PAGE->set_title(format_string($discussion->name));
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_context($context);
-$PAGE->requires->js_call_amd('mod_hiveforum/reactions', 'init');
+$PAGE->set_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id]);
+$PAGE->set_title(format_string($discussion->name) . ' | ' . format_string($forum->instance->name));
+$PAGE->set_heading(format_string($forum->course->fullname));
+$PAGE->add_body_class('mod-hiveforum');
+$PAGE->navbar->add(format_string($discussion->name));
+// The discussion title is part of the React header; avoid a duplicate activity header title.
+$PAGE->activityheader->disable();
 
-// Mark as read for the current user.
-$existing = $DB->get_record('hiveforum_reads', ['discussion' => $d, 'userid' => $USER->id]);
-if ($existing) {
-    $existing->timeread = time();
-    $DB->update_record('hiveforum_reads', $existing);
-} else {
-    $DB->insert_record('hiveforum_reads', [
-        'discussion' => $d,
-        'userid' => $USER->id,
-        'timeread' => time(),
-    ]);
-}
-
-$posts = $DB->get_records('hiveforum_posts', ['discussion' => $d], 'timecreated ASC');
+api::mark_read((int) $discussion->id, (int) $USER->id);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(format_string($discussion->name));
-
-$renderer = $PAGE->get_renderer('mod_hiveforum');
-echo $renderer->render_discussion_thread($discussion, $cm, $posts, $context);
-
-if (has_capability('mod/hiveforum:reply', $context)) {
-    echo $renderer->render_reply_form($discussion, $cm);
-}
-
+echo $PAGE->get_renderer('mod_hiveforum')->render(new \mod_hiveforum\output\thread_page($forum, $discussion));
 echo $OUTPUT->footer();

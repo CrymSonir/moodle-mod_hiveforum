@@ -1,178 +1,169 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Full editor (rich text + files) and no-JavaScript fallbacks.
+ *
+ * Day to day posting happens inline in the React UI through web services;
+ * this page handles:
+ *  - ?hiveforum=ID   start a discussion with the full editor
+ *  - ?edit=POSTID    edit a post with the full editor (any format)
+ *  - POST discussion=ID&message=...  reply without JavaScript
+ *
+ * @package    mod_hiveforum
+ * @copyright  2026 Hiveforum contributors
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
-require_once(__DIR__ . '/lib.php');
-require_once(__DIR__ . '/locallib.php');
-
-global $DB, $USER, $PAGE, $OUTPUT, $CFG;
-
 require_once($CFG->libdir . '/formslib.php');
 
-$hiveforumid = optional_param('hiveforum', 0, PARAM_INT);   // New discussion.
-$discussionid = optional_param('discussion', 0, PARAM_INT); // Reply.
-$editid = optional_param('edit', 0, PARAM_INT);             // Edit post.
-$deleteid = optional_param('delete', 0, PARAM_INT);         // Delete post.
+use mod_hiveforum\local\api;
+use mod_hiveforum\local\forum;
 
-if ($deleteid) {
+$hiveforumid = optional_param('hiveforum', 0, PARAM_INT);
+$editid = optional_param('edit', 0, PARAM_INT);
+$discussionid = optional_param('discussion', 0, PARAM_INT);
+
+// No-JavaScript reply.
+if ($discussionid) {
+    [$forum, $discussion] = forum::from_discussion_id($discussionid);
+    require_login($forum->course, false, $forum->cm);
     require_sesskey();
-    $post = $DB->get_record('hiveforum_posts', ['id' => $deleteid], '*', MUST_EXIST);
-    $discussion = $DB->get_record('hiveforum_discussions', ['id' => $post->discussion], '*', MUST_EXIST);
-    $cm = get_coursemodule_from_instance('hiveforum', $discussion->hiveforum, 0, false, MUST_EXIST);
-    $context = context_module::instance($cm->id);
-    require_login($cm->course, true, $cm);
+    $forum->require($forum->can_reply(), 'reply');
 
-    $canmoderate = has_capability('mod/hiveforum:moderate', $context);
-    $isauthor = ($post->userid == $USER->id);
-
-    if ($isauthor) {
-        require_capability('mod/hiveforum:deleteownpost', $context);
-    } else if (!$canmoderate) {
-        throw new \moodle_exception('nopermissions', 'error', '', get_string('delete', 'hiveforum'));
-    }
-
-    // If it's the first post of a discussion, maybe we should delete the whole discussion?
-    // For now, let's just delete the post. If it's the first post, the discussion might look empty.
-    $DB->delete_records('hiveforum_posts', ['id' => $post->id]);
-
-    redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id]), get_string('postdeleted', 'hiveforum'));
+    $message = required_param('message', PARAM_RAW);
+    $post = api::add_post(
+        $forum,
+        $discussion,
+        optional_param('parent', 0, PARAM_INT),
+        (int) $USER->id,
+        $message,
+        FORMAT_MARKDOWN
+    );
+    redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id], 'p' . $post->id));
 }
 
 if ($editid) {
-    $post = $DB->get_record('hiveforum_posts', ['id' => $editid], '*', MUST_EXIST);
-    $discussion = $DB->get_record('hiveforum_discussions', ['id' => $post->discussion], '*', MUST_EXIST);
-    $cm = get_coursemodule_from_instance('hiveforum', $discussion->hiveforum, 0, false, MUST_EXIST);
-    $context = context_module::instance($cm->id);
-    require_login($cm->course, true, $cm);
-
-    $canmoderate = has_capability('mod/hiveforum:moderate', $context);
-    $isauthor = ($post->userid == $USER->id);
-
-    if ($isauthor) {
-        require_capability('mod/hiveforum:editownpost', $context);
-    } else if (!$canmoderate) {
-        throw new \moodle_exception('nopermissions', 'error', '', get_string('edit', 'hiveforum'));
-    }
-
-    if ($message = optional_param('message', '', PARAM_CLEANHTML)) {
-        require_sesskey();
-        $post->message = $message;
-        $post->timemodified = time();
-        $DB->update_record('hiveforum_posts', $post);
-        redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id]), get_string('postupdated', 'hiveforum'));
-    }
-
-    // If no message, we could show an edit form, but for now we'll handle it via JS (inline).
-    // Or redirect back if someone calls this directly without message.
-    redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id]));
+    [$forum, $discussion, $post] = forum::from_post_id($editid);
+} else if ($hiveforumid) {
+    $forum = forum::from_instance_id($hiveforumid);
+    $discussion = $post = null;
+} else {
+    throw new moodle_exception('invalidparameter', 'debug');
 }
 
-if ($discussionid) {
-    require_sesskey();
+require_login($forum->course, false, $forum->cm);
+$context = $forum->context;
 
-    $discussion = $DB->get_record('hiveforum_discussions', ['id' => $discussionid], '*', MUST_EXIST);
-    $hiveforum = $DB->get_record('hiveforum', ['id' => $discussion->hiveforum], '*', MUST_EXIST);
-    $cm = get_coursemodule_from_instance('hiveforum', $hiveforum->id, $hiveforum->course, false, MUST_EXIST);
-    $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
+$editoroptions = [
+    'maxfiles' => EDITOR_UNLIMITED_FILES,
+    'maxbytes' => $forum->course->maxbytes,
+    'context' => $context,
+    'subdirs' => 0,
+    'trusttext' => false,
+];
 
-    require_login($course, true, $cm);
-    $context = context_module::instance($cm->id);
-    require_capability('mod/hiveforum:reply', $context);
-
-    $parent = optional_param('parent', 0, PARAM_INT);
-    $message = required_param('message', PARAM_CLEANHTML);
-
-    $post = new stdClass();
-    $post->discussion = $discussion->id;
-    $post->parent = $parent;
-    $post->userid = $USER->id;
-    $post->message = $message;
-    $post->messageformat = FORMAT_HTML;
-    $post->timecreated = time();
-    $post->timemodified = $post->timecreated;
-    $post->id = $DB->insert_record('hiveforum_posts', $post);
-
-    $discussion->timemodified = time();
-    $DB->update_record('hiveforum_discussions', $discussion);
-
-    hiveforum_bump_streak($hiveforum->id, $USER->id);
-
-    $event = \mod_hiveforum\event\post_created::create([
-        'objectid' => $post->id,
-        'context' => $context,
-    ]);
-    $event->trigger();
-
-    redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id]));
+if ($post) {
+    $forum->require($forum->can_edit_post($post), 'edit');
+    $isfirst = (int) $post->id === (int) $discussion->firstpost;
+    $returnurl = new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id], 'p' . $post->id);
+    $PAGE->set_url('/mod/hiveforum/post.php', ['edit' => $post->id]);
+    $title = get_string('editpost', 'hiveforum');
+} else {
+    $forum->require($forum->can_start_discussion(), 'newdiscussion');
+    $isfirst = true;
+    $returnurl = new moodle_url('/mod/hiveforum/view.php', ['id' => $forum->get_cmid()]);
+    $PAGE->set_url('/mod/hiveforum/post.php', ['hiveforum' => $forum->instance->id]);
+    $title = get_string('newdiscussion', 'hiveforum');
 }
 
-if ($hiveforumid) {
-    $hiveforum = $DB->get_record('hiveforum', ['id' => $hiveforumid], '*', MUST_EXIST);
-    $cm = get_coursemodule_from_instance('hiveforum', $hiveforum->id, $hiveforum->course, false, MUST_EXIST);
-    $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
+$PAGE->set_title($title . ' | ' . format_string($forum->instance->name));
+$PAGE->set_heading(format_string($forum->course->fullname));
+$PAGE->add_body_class('mod-hiveforum');
+$PAGE->activityheader->disable();
 
-    require_login($course, true, $cm);
-    $context = context_module::instance($cm->id);
-    require_capability('mod/hiveforum:startdiscussion', $context);
+$mform = new \mod_hiveforum\form\post_form(null, [
+    'mode' => $post ? 'edit' : 'new',
+    'withtitle' => $isfirst,
+    'allowtags' => !empty($forum->instance->allowtags),
+    'editoroptions' => $editoroptions,
+]);
 
-    $PAGE->set_url('/mod/hiveforum/post.php', ['hiveforum' => $hiveforumid]);
-    $PAGE->set_title(get_string('newdiscussion', 'hiveforum'));
-    $PAGE->set_heading(format_string($course->fullname));
-    $PAGE->set_context($context);
+// Prepare the current data.
+$data = new stdClass();
+$data->hiveforum = $forum->instance->id;
+$data->edit = $post->id ?? 0;
+if ($post) {
+    $data->id = $post->id;
+    $data->message = $post->message;
+    $data->messageformat = $post->messageformat;
+    if ($isfirst) {
+        $data->name = $discussion->name;
+        $data->tags = implode(', ', api::get_tags([(int) $discussion->id])[(int) $discussion->id]);
+    }
+} else {
+    $data->id = null;
+    $data->message = '';
+    $data->messageformat = editors_get_preferred_format();
+}
+$data = file_prepare_standard_editor($data, 'message', $editoroptions, $context, 'mod_hiveforum', 'post', $data->id);
+$mform->set_data($data);
 
-    $mform = new \mod_hiveforum\form\new_discussion_form(null, ['hiveforumid' => $hiveforumid]);
+if ($mform->is_cancelled()) {
+    redirect($returnurl);
+}
 
-    if ($mform->is_cancelled()) {
-        redirect(new moodle_url('/mod/hiveforum/view.php', ['id' => $cm->id]));
-    } else if ($data = $mform->get_data()) {
-        require_sesskey();
+if ($formdata = $mform->get_data()) {
+    $tags = isset($formdata->tags) ? explode(',', $formdata->tags) : [];
 
-        $discussion = new stdClass();
-        $discussion->hiveforum = $hiveforum->id;
-        $discussion->userid = $USER->id;
-        $discussion->name = $data->name;
-        $discussion->posttype = !empty($data->isquestion) ? 'question' : 'discussion';
-        $discussion->pinned = 0;
-        $discussion->resolved = 0;
-        $discussion->timecreated = time();
-        $discussion->timemodified = $discussion->timecreated;
-        $discussion->id = $DB->insert_record('hiveforum_discussions', $discussion);
-
-        $post = new stdClass();
-        $post->discussion = $discussion->id;
-        $post->parent = 0;
-        $post->userid = $USER->id;
-        $post->message = $data->message['text'] ?? $data->message;
-        $post->messageformat = FORMAT_HTML;
-        $post->timecreated = time();
-        $post->timemodified = $post->timecreated;
-        $post->id = $DB->insert_record('hiveforum_posts', $post);
-
-        $DB->update_record('hiveforum_discussions', (object) [
-            'id' => $discussion->id,
-            'firstpost' => $post->id,
-        ]);
-
-        if (!empty($data->tags)) {
-            foreach (array_filter(array_map('trim', explode(',', $data->tags))) as $tag) {
-                $DB->insert_record('hiveforum_tags', ['discussion' => $discussion->id, 'tag' => $tag]);
-            }
+    if ($post) {
+        $formdata->id = $post->id;
+        $formdata = file_postupdate_standard_editor(
+            $formdata,
+            'message',
+            $editoroptions,
+            $context,
+            'mod_hiveforum',
+            'post',
+            $post->id
+        );
+        api::update_post($forum, $discussion, $post, $formdata->message, (int) $formdata->messageformat);
+        if ($isfirst && isset($formdata->name)) {
+            api::update_discussion($forum, $discussion, $formdata->name, isset($formdata->tags) ? $tags : null);
         }
-
-        hiveforum_bump_streak($hiveforum->id, $USER->id);
-
-        $event = \mod_hiveforum\event\discussion_created::create([
-            'objectid' => $discussion->id,
-            'context' => $context,
-        ]);
-        $event->trigger();
-
-        redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id]));
+        redirect($returnurl, get_string('postupdated', 'hiveforum'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
 
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('newdiscussion', 'hiveforum'));
-    $mform->display();
-    echo $OUTPUT->footer();
-    exit;
+    $editor = $formdata->message_editor;
+    $newdiscussion = api::create_discussion(
+        $forum,
+        (int) $USER->id,
+        $formdata->name,
+        $editor['text'],
+        (int) $editor['format'],
+        !empty($formdata->isquestion),
+        $tags,
+        (int) $editor['itemid'],
+        $editoroptions
+    );
+    redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $newdiscussion->id]));
 }
 
-throw new moodle_exception('invalidparameter', 'error');
+echo $OUTPUT->header();
+echo $OUTPUT->heading($title);
+$mform->display();
+echo $OUTPUT->footer();

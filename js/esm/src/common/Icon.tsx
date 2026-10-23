@@ -1,0 +1,89 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Inline stroke icons (24px grid, currentColor), decorative by default.
+ *
+ * @module     mod_hiveforum/common/Icon
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+const PATHS = {
+    plus: 'M12 5v14M5 12h14',
+    search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
+    x: 'M18 6 6 18M6 6l12 12',
+    chat: 'M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.4-5.6A8.5 8.5 0 1 1 21 12z',
+    users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
+    layers: 'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+    pin: 'M12 17v5M9 10.8V4h6v6.8l3 3.2v2H6v-2l3-3.2zM8 4h8',
+    check: 'M20 6 9 17l-5-5',
+    checkcircle: 'M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3',
+    bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0',
+    bellcheck: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0M9.5 9.5l2 2 3.5-3.5',
+    reply: 'M9 17 4 12l5-5M20 18v-2a4 4 0 0 0-4-4H4',
+    edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z',
+    trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6',
+    more: 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+    link: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
+    chevrondown: 'm6 9 6 6 6-6',
+    chevronright: 'm9 18 6-6-6-6',
+    arrowleft: 'M19 12H5M12 19l-7-7 7-7',
+    arrowdown: 'M12 5v14M19 12l-7 7-7-7',
+    flame: 'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3.3.3 1.4 1.2 2.8 2.5 2.8z',
+    question: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01',
+    tag: 'M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4zM7.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z',
+    bold: 'M6 12h9a4 4 0 0 1 0 8H6zM6 4h8a4 4 0 0 1 0 8H6z',
+    italic: 'M19 4h-9M14 20H5M15 4 9 20',
+    code: 'm16 18 6-6-6-6M8 6l-6 6 6 6',
+    quote: 'M3 21c3 0 7-1 7-8V5H3v7h4c0 3.5-2 5-4 5zM14 21c3 0 7-1 7-8V5h-7v7h4c0 3.5-2 5-4 5z',
+    list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+    expand: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7',
+    sort: 'M3 6h18M6 12h12M10 18h4',
+    eye: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+    smile: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01',
+    sparkles: 'M12 3l1.9 5.8L20 10.7l-6.1 1.9L12 18.5l-1.9-5.9L4 10.7l6.1-1.9zM19 17l.8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8z',
+} as const;
+
+export type IconName = keyof typeof PATHS;
+
+interface IconProps {
+    name: IconName;
+    size?: number;
+    className?: string;
+    /** When set, the icon is exposed to assistive technologies with this name. */
+    label?: string;
+}
+
+export default function Icon({name, size = 18, className = '', label}: IconProps) {
+    return (
+        <svg
+            className={`hf-icon ${className}`.trim()}
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden={label ? undefined : true}
+            role={label ? 'img' : undefined}
+            aria-label={label}
+            focusable="false"
+        >
+            <path d={PATHS[name]} />
+        </svg>
+    );
+}

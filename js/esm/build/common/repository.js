@@ -1,0 +1,6 @@
+import{fetchOne as o}from"@moodle/lms/core/ajax";/**
+ * Data-access layer: every web service call of the plugin lives here.
+ *
+ * @module     mod_hiveforum/common/repository
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */const n=s=>o({methodname:"mod_hiveforum_get_discussions",args:{...s}}),r=(s,e=!0)=>o({methodname:"mod_hiveforum_get_discussion",args:{discussionid:s,markread:e}}),m=s=>o({methodname:"mod_hiveforum_create_discussion",args:s}),u=(s,e,t)=>o({methodname:"mod_hiveforum_update_discussion",args:{discussionid:s,name:e,tags:t}}),a=(s,e,t)=>o({methodname:"mod_hiveforum_set_discussion_state",args:{discussionid:s,state:e,value:t}}),c=(s,e,t)=>o({methodname:"mod_hiveforum_add_post",args:{discussionid:s,parentid:e,message:t}}),d=(s,e)=>o({methodname:"mod_hiveforum_update_post",args:{postid:s,message:e}}),g=s=>o({methodname:"mod_hiveforum_delete_post",args:{postid:s}}),p=(s,e)=>o({methodname:"mod_hiveforum_toggle_reaction",args:{postid:s,reactiontype:e}}),_=s=>o({methodname:"mod_hiveforum_toggle_accepted",args:{postid:s}}),l=s=>o({methodname:"mod_hiveforum_mark_all_read",args:{cmid:s}});export{c as addPost,m as createDiscussion,g as deletePost,r as getDiscussion,n as getDiscussions,l as markAllRead,a as setDiscussionState,_ as toggleAccepted,p as toggleReaction,u as updateDiscussion,d as updatePost};

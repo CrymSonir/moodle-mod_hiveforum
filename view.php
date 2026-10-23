@@ -1,43 +1,64 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Discussion list.
+ *
+ * @package    mod_hiveforum
+ * @copyright  2026 Hiveforum contributors
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
-require_once(__DIR__ . '/lib.php');
-require_once(__DIR__ . '/locallib.php');
 
-$id = required_param('id', PARAM_INT); // Course module id.
-$filter = optional_param('filter', 'all', PARAM_ALPHA); // all | unread | following.
+use mod_hiveforum\local\api;
+use mod_hiveforum\local\forum;
+
+$id = required_param('id', PARAM_INT);
+$filter = optional_param('filter', 'all', PARAM_ALPHA);
 $search = optional_param('search', '', PARAM_TEXT);
+$tag = optional_param('tag', '', PARAM_TAG);
+$sort = optional_param('sort', 'recent', PARAM_ALPHA);
 
-$cm = get_coursemodule_from_id('hiveforum', $id, 0, false, MUST_EXIST);
-$course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
-$hiveforum = $DB->get_record('hiveforum', ['id' => $cm->instance], '*', MUST_EXIST);
+$forum = forum::from_cmid($id);
+require_login($forum->course, true, $forum->cm);
+require_capability('mod/hiveforum:view', $forum->context);
 
-require_login($course, true, $cm);
-$context = context_module::instance($cm->id);
-require_capability('mod/hiveforum:view', $context);
+$filter = in_array($filter, api::FILTERS, true) ? $filter : 'all';
+$sort = in_array($sort, api::SORTS, true) ? $sort : 'recent';
 
-$PAGE->set_url('/mod/hiveforum/view.php', ['id' => $cm->id]);
-$PAGE->set_title(format_string($hiveforum->name));
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_context($context);
+$PAGE->set_url('/mod/hiveforum/view.php', ['id' => $forum->get_cmid()]);
+$PAGE->set_title(format_string($forum->instance->name));
+$PAGE->set_heading(format_string($forum->course->fullname));
 $PAGE->add_body_class('mod-hiveforum');
 
-// Trigger course_module_viewed event + completion.
 $event = \mod_hiveforum\event\course_module_viewed::create([
-    'objectid' => $hiveforum->id,
-    'context' => $context,
+    'objectid' => $forum->instance->id,
+    'context' => $forum->context,
 ]);
-$event->add_record_snapshot('course_modules', $cm);
-$event->add_record_snapshot('hiveforum', $hiveforum);
+$event->add_record_snapshot('course_modules', $forum->cm);
+$event->add_record_snapshot('course', $forum->course);
+$event->add_record_snapshot('hiveforum', $forum->instance);
 $event->trigger();
 
-$completion = new completion_info($course);
-$completion->set_module_viewed($cm);
+$completion = new completion_info($forum->course);
+$completion->set_module_viewed($forum->cm);
 
 echo $OUTPUT->header();
-
-$renderer = $PAGE->get_renderer('mod_hiveforum');
-$discussions = hiveforum_get_discussion_summaries($hiveforum->id, $USER->id, $filter, $search);
-
-echo $renderer->render_discussion_list($hiveforum, $cm, $discussions, $filter, $search);
-
+echo $PAGE->get_renderer('mod_hiveforum')->render(
+    new \mod_hiveforum\output\forum_page($forum, $filter, $search, $tag, $sort)
+);
 echo $OUTPUT->footer();

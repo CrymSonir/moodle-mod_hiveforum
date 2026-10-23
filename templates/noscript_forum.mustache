@@ -1,0 +1,44 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_hiveforum/noscript_forum
+
+    Server-side fallback of the discussion list, shown when JavaScript is disabled.
+
+    Example context (json):
+    {
+        "fulleditorurl": "#",
+        "capabilities": {"canstart": true},
+        "discussions": [{"name": "Hello", "url": "#", "replycount": 2, "author": {"fullname": "Ada"}}]
+    }
+}}
+<div class="hf-noscript">
+    {{#capabilities.canstart}}
+        <p><a class="btn btn-primary" href="{{fulleditorurl}}">{{#str}}newdiscussion, mod_hiveforum{{/str}}</a></p>
+    {{/capabilities.canstart}}
+    <ul class="list-unstyled">
+        {{#discussions}}
+            <li class="mb-2">
+                <a href="{{url}}"><strong>{{{name}}}</strong></a>
+                <span class="text-muted"> &middot; {{author.fullname}} &middot; {{#str}}repliescount, mod_hiveforum, {{replycount}}{{/str}}</span>
+            </li>
+        {{/discussions}}
+        {{^discussions}}
+            <li>{{#str}}emptydiscussions, mod_hiveforum{{/str}}</li>
+        {{/discussions}}
+    </ul>
+</div>
