@@ -71,16 +71,28 @@ function DiscussionCard({ discussion: d, activeTag, onTag }) {
           lineNumber: 60,
           columnNumber: 25
         }, this),
+        d.groupname && /* @__PURE__ */ jsxDEV("span", { className: "hf-badge hf-badge--group", children: [
+          /* @__PURE__ */ jsxDEV(Icon, { name: "users2", size: 12 }, void 0, false, {
+            fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
+            lineNumber: 62,
+            columnNumber: 80
+          }, this),
+          d.groupname
+        ] }, void 0, true, {
+          fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
+          lineNumber: 62,
+          columnNumber: 37
+        }, this),
         d.following && /* @__PURE__ */ jsxDEV("span", { className: "hf-badge hf-badge--ghost", children: [
           /* @__PURE__ */ jsxDEV(Icon, { name: "bellcheck", size: 12 }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-            lineNumber: 62,
+            lineNumber: 63,
             columnNumber: 80
           }, this),
           t("followed")
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 62,
+          lineNumber: 63,
           columnNumber: 37
         }, this)
       ] }, void 0, true, {
@@ -91,32 +103,32 @@ function DiscussionCard({ discussion: d, activeTag, onTag }) {
       /* @__PURE__ */ jsxDEV("h3", { className: "hf-card__title", id: `hf-d-${d.id}`, children: [
         d.unread && /* @__PURE__ */ jsxDEV("span", { className: "hf-dot", title: t("unreadactivity"), children: /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: t("unreadactivity") }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 65,
+          lineNumber: 66,
           columnNumber: 87
         }, this) }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 65,
+          lineNumber: 66,
           columnNumber: 34
         }, this),
         /* @__PURE__ */ jsxDEV("a", { href: d.url, className: "hf-card__link", dangerouslySetInnerHTML: { __html: d.name } }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 66,
+          lineNumber: 67,
           columnNumber: 21
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 64,
+        lineNumber: 65,
         columnNumber: 17
       }, this),
       d.excerpt && /* @__PURE__ */ jsxDEV("p", { className: "hf-card__excerpt", children: d.excerpt }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 68,
+        lineNumber: 69,
         columnNumber: 31
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "hf-card__meta", children: [
         /* @__PURE__ */ jsxDEV("span", { className: "hf-card__author", children: d.author.fullname }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 70,
+          lineNumber: 71,
           columnNumber: 21
         }, this),
         d.lastauthor ? /* @__PURE__ */ jsxDEV("span", { children: [
@@ -124,16 +136,16 @@ function DiscussionCard({ discussion: d, activeTag, onTag }) {
           " ",
           /* @__PURE__ */ jsxDEV(RelativeTime, { timestamp: d.timemodified }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-            lineNumber: 72,
+            lineNumber: 73,
             columnNumber: 73
           }, this)
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 72,
+          lineNumber: 73,
           columnNumber: 25
         }, this) : /* @__PURE__ */ jsxDEV(RelativeTime, { timestamp: d.timecreated }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 74,
+          lineNumber: 75,
           columnNumber: 25
         }, this),
         d.tags.length > 0 && /* @__PURE__ */ jsxDEV("span", { className: "hf-card__tags", children: d.tags.map((tag) => /* @__PURE__ */ jsxDEV(
@@ -152,18 +164,18 @@ function DiscussionCard({ discussion: d, activeTag, onTag }) {
           true,
           {
             fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-            lineNumber: 79,
+            lineNumber: 80,
             columnNumber: 33
           },
           this
         )) }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 77,
+          lineNumber: 78,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 69,
+        lineNumber: 70,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
@@ -180,17 +192,17 @@ function DiscussionCard({ discussion: d, activeTag, onTag }) {
           children: [
             /* @__PURE__ */ jsxDEV(Icon, { name: "chat", size: 15 }, void 0, false, {
               fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-              lineNumber: 96,
+              lineNumber: 97,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", children: d.replycount }, void 0, false, {
               fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-              lineNumber: 97,
+              lineNumber: 98,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: t.plural(d.replycount, "onereply", "repliescount", "noreplies") }, void 0, false, {
               fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-              lineNumber: 98,
+              lineNumber: 99,
               columnNumber: 21
             }, this)
           ]
@@ -199,24 +211,24 @@ function DiscussionCard({ discussion: d, activeTag, onTag }) {
         true,
         {
           fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-          lineNumber: 94,
+          lineNumber: 95,
           columnNumber: 17
         },
         this
       ),
       /* @__PURE__ */ jsxDEV(ReactionSummary, { reactions: d.reactions }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 100,
+        lineNumber: 101,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV(AvatarStack, { users: d.participants }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 101,
+        lineNumber: 102,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-      lineNumber: 93,
+      lineNumber: 94,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
@@ -230,33 +242,33 @@ function DiscussionCardSkeleton() {
   return /* @__PURE__ */ jsxDEV("div", { className: "hf-card hf-card--skeleton", "aria-hidden": "true", children: [
     /* @__PURE__ */ jsxDEV("span", { className: "hf-skel hf-skel--avatar" }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-      lineNumber: 113,
+      lineNumber: 114,
       columnNumber: 13
     }, this),
     /* @__PURE__ */ jsxDEV("div", { className: "hf-card__main", children: [
       /* @__PURE__ */ jsxDEV("span", { className: "hf-skel hf-skel--title" }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 115,
+        lineNumber: 116,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("span", { className: "hf-skel hf-skel--line" }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 116,
+        lineNumber: 117,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("span", { className: "hf-skel hf-skel--line hf-skel--short" }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-        lineNumber: 117,
+        lineNumber: 118,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-      lineNumber: 114,
+      lineNumber: 115,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
     fileName: "../plugin/hiveforum/js/esm/src/forum/DiscussionCard.tsx",
-    lineNumber: 112,
+    lineNumber: 113,
     columnNumber: 9
   }, this);
 }

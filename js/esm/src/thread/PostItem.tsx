@@ -114,6 +114,7 @@ export default function PostItem({post, node, depth = 0, parentAuthor, variant =
                             submitLabel={t('savechanges')}
                             autoFocus
                             onSubmit={(message) => thread.update(post, message)}
+                            mentions={{cmid: thread.cmid, discussionid: discussion.id}}
                             onCancel={() => thread.setEditing(null)}
                         />
                     </div>
@@ -131,7 +132,7 @@ export default function PostItem({post, node, depth = 0, parentAuthor, variant =
                         />
                     )}
                     <div className="hf-post__actions">
-                        {caps.canreply && (
+                        {discussion.canreply && (
                             <button type="button" className={`hf-action ${isReplying ? 'is-active' : ''}`}
                                 onClick={() => thread.setReplyingTo(isReplying ? null : post.id)} aria-expanded={isReplying}>
                                 <Icon name="reply" size={15} /> {t('reply')}
@@ -179,6 +180,7 @@ export default function PostItem({post, node, depth = 0, parentAuthor, variant =
                             autoFocus
                             user={currentuser}
                             onSubmit={(message) => thread.reply(post.id, message)}
+                            mentions={{cmid: thread.cmid, discussionid: discussion.id}}
                             onCancel={() => thread.setReplyingTo(null)}
                         />
                     </div>

@@ -191,6 +191,7 @@ function ThreadView(props: ThreadProps) {
     }, [t]);
 
     const actions: ThreadActions = {
+        cmid: props.cmid,
         discussion,
         capabilities,
         currentuser,
@@ -260,7 +261,7 @@ function ThreadView(props: ThreadProps) {
                     <p className="hf-thread__empty">{t('noreplies_help')}</p>
                 )}
 
-                {capabilities.canreply && root && (
+                {discussion.canreply && root && (
                     <section className="hf-thread__composer" aria-label={t('addreply')}>
                         <Composer
                             draftKey={`reply/${discussion.id}/0`}
@@ -270,6 +271,7 @@ function ThreadView(props: ThreadProps) {
                             user={currentuser}
                             compact
                             onSubmit={(message) => reply(root.id, message)}
+                            mentions={{cmid: props.cmid, discussionid: discussion.id}}
                         />
                     </section>
                 )}

@@ -55,7 +55,10 @@ $table->attributes['class'] = 'generaltable mod_index';
 
 foreach ($instances as $instance) {
     $discussions = $DB->count_records('hiveforum_discussions', ['hiveforum' => $instance->id]);
-    $unread = isguestuser() ? 0 : \mod_hiveforum\local\api::count_unread((int) $instance->id, (int) $USER->id);
+    $unread = isguestuser() ? 0 : \mod_hiveforum\local\api::count_unread(
+        \mod_hiveforum\local\forum::from_instance_id((int) $instance->id),
+        (int) $USER->id
+    );
     $link = html_writer::link(
         new moodle_url('/mod/hiveforum/view.php', ['id' => $instance->coursemodule]),
         format_string($instance->name),

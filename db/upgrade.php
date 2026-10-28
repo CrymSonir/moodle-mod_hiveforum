@@ -95,5 +95,87 @@ function xmldb_hiveforum_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026102300, 'hiveforum');
     }
 
+    if ($oldversion < 2026102800) {
+        // Activity settings: student posting, subscriptions, notifications, completion rules.
+        $table = new xmldb_table('hiveforum');
+        $fields = [
+            new xmldb_field('studentposting', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'all', 'allowtags'),
+            new xmldb_field('subscriptionmode', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'studentposting'),
+            new xmldb_field('notifications', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'subscriptionmode'),
+            new xmldb_field('completiondiscussions', XMLDB_TYPE_INTEGER, '9', null, XMLDB_NOTNULL, null, '0', 'notifications'),
+            new xmldb_field('completionreplies', XMLDB_TYPE_INTEGER, '9', null, XMLDB_NOTNULL, null, '0', 'completiondiscussions'),
+            new xmldb_field('completionposts', XMLDB_TYPE_INTEGER, '9', null, XMLDB_NOTNULL, null, '0', 'completionreplies'),
+            new xmldb_field('completionaccepted', XMLDB_TYPE_INTEGER, '9', null, XMLDB_NOTNULL, null, '0', 'completionposts'),
+        ];
+        foreach ($fields as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        // Discussions: group.
+        $table = new xmldb_table('hiveforum_discussions');
+        $field = new xmldb_field('groupid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'usermodified');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('groupid', XMLDB_INDEX_NOTUNIQUE, ['groupid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Discussion subscriptions: explicit "not following" rows.
+        $table = new xmldb_table('hiveforum_subscriptions');
+        $field = new xmldb_field('state', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'userid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Forum-level subscriptions.
+        $table = new xmldb_table('hiveforum_forum_subs');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('hiveforum', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('state', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('hiveforum', XMLDB_KEY_FOREIGN, ['hiveforum'], 'hiveforum', ['id']);
+            $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $table->add_index('hiveforum_user', XMLDB_INDEX_UNIQUE, ['hiveforum', 'userid']);
+            $dbman->create_table($table);
+        }
+
+        // Digest preferences.
+        $table = new xmldb_table('hiveforum_digests');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('hiveforum', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('digest', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('hiveforum', XMLDB_KEY_FOREIGN, ['hiveforum'], 'hiveforum', ['id']);
+            $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $table->add_index('hiveforum_user', XMLDB_INDEX_UNIQUE, ['hiveforum', 'userid']);
+            $dbman->create_table($table);
+        }
+
+        // Mentions.
+        $table = new xmldb_table('hiveforum_mentions');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('postid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('postid', XMLDB_KEY_FOREIGN, ['postid'], 'hiveforum_posts', ['id']);
+            $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $table->add_index('post_user', XMLDB_INDEX_UNIQUE, ['postid', 'userid']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2026102800, 'hiveforum');
+    }
+
     return true;
 }

@@ -60,6 +60,7 @@ class set_discussion_state extends external_api {
         [$forum, $discussion] = forum::from_discussion_id($params['discussionid']);
         self::validate_context($forum->context);
         require_capability('mod/hiveforum:view', $forum->context);
+        $forum->require_can_see_discussion($discussion);
 
         switch ($params['state']) {
             case 'pinned':
@@ -71,8 +72,11 @@ class set_discussion_state extends external_api {
                 api::set_resolved($discussion, $params['value']);
                 break;
             case 'following':
-                $forum->require($forum->can_follow(), 'follow');
-                api::set_following((int) $discussion->id, (int) $USER->id, $params['value']);
+                $forum->require(
+                    $forum->can_follow() && \mod_hiveforum\local\subscriptions::can_change_discussion_subscription($forum),
+                    'follow'
+                );
+                \mod_hiveforum\local\subscriptions::set_following($forum, (int) $discussion->id, (int) $USER->id, $params['value']);
                 break;
             default:
                 throw new \invalid_parameter_exception('Unknown state ' . $params['state']);

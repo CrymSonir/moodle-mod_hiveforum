@@ -52,6 +52,7 @@ class delete_post extends external_api {
         $params = self::validate_parameters(self::execute_parameters(), compact('postid'));
         [$forum, $discussion, $post] = forum::from_post_id($params['postid']);
         self::validate_context($forum->context);
+        $forum->require_can_see_discussion($discussion);
         $forum->require($forum->can_delete_post($post), 'delete');
 
         $discussiondeleted = api::delete_post($forum, $discussion, $post);

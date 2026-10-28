@@ -32,6 +32,7 @@ $d = required_param('d', PARAM_INT);
 [$forum, $discussion] = forum::from_discussion_id($d);
 require_login($forum->course, true, $forum->cm);
 require_capability('mod/hiveforum:view', $forum->context);
+$forum->require_can_see_discussion($discussion);
 
 $PAGE->set_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id]);
 $PAGE->set_title(format_string($discussion->name) . ' | ' . format_string($forum->instance->name));

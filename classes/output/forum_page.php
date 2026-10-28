@@ -45,6 +45,7 @@ class forum_page implements \core\output\renderable, react_component_renderable 
      * @param string $search
      * @param string $tag
      * @param string $sort
+     * @param int $activegroup
      */
     public function __construct(
         /** @var forum */
@@ -57,6 +58,8 @@ class forum_page implements \core\output\renderable, react_component_renderable 
         private readonly string $tag = '',
         /** @var string */
         private readonly string $sort = 'recent',
+        /** @var int */
+        private readonly int $activegroup = 0,
     ) {
     }
 
@@ -84,7 +87,10 @@ class forum_page implements \core\output\renderable, react_component_renderable 
 
         $forum = $this->forum;
         $exporter = new exporter($forum);
-        $list = api::get_discussions($forum, (int) $USER->id, $this->filter, $this->search, $this->tag, $this->sort);
+        $userid = (int) $USER->id;
+        $group = $this->activegroup;
+        $list = api::get_discussions($forum, $userid, $this->filter, $this->search, $this->tag, $this->sort, 0, api::PERPAGE, $group);
+        $realuser = isloggedin() && !isguestuser();
 
         $this->props = [
             'cmid' => $forum->get_cmid(),
@@ -93,15 +99,19 @@ class forum_page implements \core\output\renderable, react_component_renderable 
             'search' => $this->search,
             'tag' => $this->tag,
             'sort' => $this->sort,
+            'groupid' => $group,
             'discussions' => $exporter->discussions($list['discussions']),
             'total' => $list['total'],
             'perpage' => api::PERPAGE,
-            'counts' => api::get_filter_counts($forum, (int) $USER->id),
-            'stats' => api::get_stats($forum),
-            'populartags' => $forum->instance->allowtags ? api::get_popular_tags($forum) : [],
+            'counts' => api::get_filter_counts($forum, $userid, $group),
+            'stats' => api::get_stats($forum, $userid, $group),
+            'populartags' => $forum->instance->allowtags ? api::get_popular_tags($forum, $userid, $group) : [],
             'capabilities' => $exporter->capabilities(),
-            'currentuser' => isloggedin() && !isguestuser() ? $exporter->user((int) $USER->id) : null,
+            'preferences' => $realuser ? $exporter->preferences($userid) : null,
+            'currentuser' => $realuser ? $exporter->user($userid) : null,
             'fulleditorurl' => (new url('/mod/hiveforum/post.php', ['hiveforum' => $forum->instance->id]))->out(false),
+            'reporturl' => (new url('/mod/hiveforum/report.php', ['id' => $forum->get_cmid()]))->out(false),
+            'subscribersurl' => (new url('/mod/hiveforum/subscribers.php', ['id' => $forum->get_cmid()]))->out(false),
             'strings' => strings::get(),
         ];
         return $this->props;

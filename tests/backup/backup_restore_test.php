@@ -18,6 +18,7 @@ namespace mod_hiveforum\backup;
 
 use mod_hiveforum\local\api;
 use mod_hiveforum\local\forum;
+use mod_hiveforum\local\subscriptions;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -43,10 +44,27 @@ final class backup_restore_test extends \advanced_testcase {
         $gen = $this->getDataGenerator();
         $course = $gen->create_course();
         $student = $gen->create_and_enrol($course, 'student');
-        $cm = $gen->create_module('hiveforum', ['course' => $course->id]);
+        $teacher = $gen->create_and_enrol($course, 'editingteacher');
+        $group = $gen->create_group(['courseid' => $course->id, 'name' => 'Team']);
+        $gen->create_group_member(['groupid' => $group->id, 'userid' => $student->id]);
+        $cm = $gen->create_module('hiveforum', ['course' => $course->id, 'groupmode' => SEPARATEGROUPS,
+            'studentposting' => 'questions', 'subscriptionmode' => subscriptions::AUTO, 'completionposts' => 3]);
         $forum = forum::from_cmid((int) $cm->cmid);
 
-        $q = api::create_discussion($forum, (int) $student->id, 'Question', 'Body', FORMAT_MARKDOWN, true, ['tag1']);
+        $q = api::create_discussion(
+            $forum,
+            (int) $student->id,
+            'Question',
+            'Body @[Teacher](user:' . $teacher->id . ')',
+            FORMAT_MARKDOWN,
+            true,
+            ['tag1'],
+            null,
+            [],
+            (int) $group->id
+        );
+        subscriptions::set_forum_subscription($forum, (int) $student->id, false);
+        subscriptions::set_digest($forum, (int) $student->id, true);
         $a = api::add_post($forum, $q, 0, (int) $USER->id, 'Answer', FORMAT_MARKDOWN);
         $child = api::add_post($forum, $q, (int) $a->id, (int) $student->id, 'Thanks', FORMAT_MARKDOWN);
         api::toggle_reaction($forum, $a, (int) $student->id, 'love');
@@ -96,5 +114,21 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertEquals(['tag1'], api::get_tags([(int) $newd->id])[(int) $newd->id]);
         $this->assertTrue($DB->record_exists('hiveforum_reactions', ['postid' => $answer->id, 'reactiontype' => 'love']));
         $this->assertTrue($DB->record_exists('hiveforum_subscriptions', ['discussion' => $newd->id, 'userid' => $student->id]));
+
+        // Settings, group of the discussion, preferences and mentions.
+        $this->assertEquals('questions', $newforum->studentposting);
+        $this->assertEquals(subscriptions::AUTO, $newforum->subscriptionmode);
+        $this->assertEquals(3, $newforum->completionposts);
+        $newgroup = $DB->get_record('groups', ['courseid' => $newcourseid, 'name' => 'Team'], '*', MUST_EXIST);
+        $this->assertEquals($newgroup->id, $newd->groupid);
+        $this->assertTrue($DB->record_exists(
+            'hiveforum_forum_subs',
+            ['hiveforum' => $newforum->id, 'userid' => $student->id, 'state' => 0]
+        ));
+        $this->assertTrue($DB->record_exists(
+            'hiveforum_digests',
+            ['hiveforum' => $newforum->id, 'userid' => $student->id, 'digest' => 1]
+        ));
+        $this->assertTrue($DB->record_exists('hiveforum_mentions', ['postid' => $first->id, 'userid' => $teacher->id]));
     }
 }

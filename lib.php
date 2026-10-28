@@ -34,10 +34,9 @@ function hiveforum_supports($feature) {
         FEATURE_SHOW_DESCRIPTION => true,
         FEATURE_BACKUP_MOODLE2 => true,
         FEATURE_COMPLETION_TRACKS_VIEWS => true,
-        FEATURE_COMPLETION_HAS_RULES => false,
+        FEATURE_COMPLETION_HAS_RULES => true,
         FEATURE_GRADE_HAS_GRADE => false,
-        // Groups are not implemented yet: do not advertise them.
-        FEATURE_GROUPS => false,
+        FEATURE_GROUPS => true,
         FEATURE_GROUPINGS => true,
         FEATURE_MOD_PURPOSE => MOD_PURPOSE_COLLABORATION,
         FEATURE_MOD_OTHERPURPOSE => MOD_PURPOSE_COMMUNICATION,
@@ -94,7 +93,9 @@ function hiveforum_delete_instance($id) {
     foreach (array_chunk($discussionids, 500) as $chunk) {
         \mod_hiveforum\local\api::delete_discussion_data($chunk);
     }
-    $DB->delete_records('hiveforum_streaks', ['hiveforum' => $id]);
+    foreach (['hiveforum_streaks', 'hiveforum_forum_subs', 'hiveforum_digests'] as $table) {
+        $DB->delete_records($table, ['hiveforum' => $id]);
+    }
     $DB->delete_records('hiveforum', ['id' => $id]);
 
     // Files are removed by the core when the context is deleted.
@@ -183,7 +184,16 @@ function hiveforum_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
  * @return array
  */
 function mod_hiveforum_get_completion_active_rule_descriptions($cm) {
-    return [];
+    if (empty($cm->customdata['customcompletionrules']) || $cm->completion != COMPLETION_TRACKING_AUTOMATIC) {
+        return [];
+    }
+    $descriptions = [];
+    foreach ($cm->customdata['customcompletionrules'] as $rule => $value) {
+        if (!empty($value)) {
+            $descriptions[] = get_string('completiondetail:' . substr($rule, 10), 'hiveforum', $value);
+        }
+    }
+    return $descriptions;
 }
 
 /**
@@ -197,7 +207,7 @@ function hiveforum_cm_info_view(cm_info $cm) {
     if (!isloggedin() || isguestuser()) {
         return;
     }
-    $unread = \mod_hiveforum\local\api::count_unread((int) $cm->instance, (int) $USER->id);
+    $unread = \mod_hiveforum\local\api::count_unread(\mod_hiveforum\local\forum::from_cmid((int) $cm->id), (int) $USER->id);
     if ($unread > 0) {
         $cm->set_after_link(html_writer::span(
             get_string('unreadcount', 'hiveforum', $unread),
@@ -226,7 +236,9 @@ function hiveforum_reset_userdata($data) {
         foreach (array_chunk($discussionids, 500) as $chunk) {
             \mod_hiveforum\local\api::delete_discussion_data($chunk);
         }
-        $DB->delete_records('hiveforum_streaks', ['hiveforum' => $forumid]);
+        foreach (['hiveforum_streaks', 'hiveforum_forum_subs', 'hiveforum_digests'] as $table) {
+            $DB->delete_records($table, ['hiveforum' => $forumid]);
+        }
         $cm = get_coursemodule_from_instance('hiveforum', $forumid, $data->courseid);
         if ($cm) {
             get_file_storage()->delete_area_files(context_module::instance($cm->id)->id, 'mod_hiveforum', 'post');
@@ -259,4 +271,65 @@ function hiveforum_reset_course_form_definition(&$mform) {
  */
 function hiveforum_reset_course_form_defaults($course) {
     return ['reset_hiveforum_all' => 1];
+}
+
+/**
+ * Information cached in the course module (custom completion rules, description).
+ *
+ * @param stdClass $coursemodule
+ * @return cached_cm_info|false
+ */
+function hiveforum_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $fields = 'id, name, intro, introformat, completiondiscussions, completionreplies, completionposts, completionaccepted';
+    if (!$hiveforum = $DB->get_record('hiveforum', ['id' => $coursemodule->instance], $fields)) {
+        return false;
+    }
+
+    $result = new cached_cm_info();
+    $result->name = $hiveforum->name;
+    if ($coursemodule->showdescription) {
+        $result->content = format_module_intro('hiveforum', $hiveforum, $coursemodule->id, false);
+    }
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        foreach (['completiondiscussions', 'completionreplies', 'completionposts', 'completionaccepted'] as $rule) {
+            $result->customdata['customcompletionrules'][$rule] = (int) $hiveforum->$rule;
+        }
+    }
+    return $result;
+}
+
+/**
+ * Add the "Engagement report" and "Subscriptions" pages to the activity navigation.
+ *
+ * @param settings_navigation $settingsnav
+ * @param navigation_node $node
+ */
+function hiveforum_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $node) {
+    $cm = $settingsnav->get_page()->cm;
+    if (!$cm) {
+        return;
+    }
+    $context = context_module::instance($cm->id);
+    if (has_capability('mod/hiveforum:viewreports', $context)) {
+        $node->add(
+            get_string('engagementreport', 'hiveforum'),
+            new moodle_url('/mod/hiveforum/report.php', ['id' => $cm->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'hiveforumreport',
+            new pix_icon('i/report', '')
+        );
+    }
+    if (has_capability('mod/hiveforum:managesubscriptions', $context)) {
+        $node->add(
+            get_string('managesubscriptions', 'hiveforum'),
+            new moodle_url('/mod/hiveforum/subscribers.php', ['id' => $cm->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'hiveforumsubscriptions',
+            new pix_icon('t/subscribed', '')
+        );
+    }
 }

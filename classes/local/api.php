@@ -31,10 +31,10 @@ use stdClass;
  */
 final class api {
     /** @var string[] List filters. */
-    public const FILTERS = ['all', 'unread', 'following', 'questions', 'mine'];
+    public const FILTERS = ['all', 'unread', 'following', 'questions', 'unanswered', 'mine'];
 
     /** @var string[] List sort orders. */
-    public const SORTS = ['recent', 'newest', 'popular'];
+    public const SORTS = ['recent', 'newest', 'popular', 'reactions', 'likes', 'replies'];
 
     /** @var int Maximum tags per discussion. */
     public const MAX_TAGS = 5;
@@ -57,6 +57,7 @@ final class api {
      * @param string $sort one of self::SORTS
      * @param int $page zero-based
      * @param int $perpage
+     * @param int $activegroup 0 for every group the user can see
      * @return array{discussions: stdClass[], total: int}
      */
     public static function get_discussions(
@@ -68,14 +69,21 @@ final class api {
         string $sort = 'recent',
         int $page = 0,
         int $perpage = self::PERPAGE,
+        int $activegroup = 0,
     ): array {
         global $DB;
 
-        [$where, $params] = self::build_list_where($forum, $userid, $filter, $search, $tag);
+        [$where, $params] = self::build_list_where($forum, $userid, $filter, $search, $tag, $activegroup);
+        [$followsql, $followparams] = subscriptions::following_sql($forum, $userid);
+        $params['readuser'] = $userid;
+        $params['subuser'] = $userid;
 
         $orderby = match ($sort) {
             'newest' => 'x.timecreated DESC, x.id DESC',
             'popular' => '(x.replycount + x.reactioncount) DESC, x.timemodified DESC',
+            'reactions' => 'x.reactioncount DESC, x.timemodified DESC',
+            'likes' => 'x.likecount DESC, x.reactioncount DESC, x.timemodified DESC',
+            'replies' => 'x.replycount DESC, x.timemodified DESC',
             default => 'x.timemodified DESC, x.id DESC',
         };
 
@@ -87,18 +95,20 @@ final class api {
                                   FROM {hiveforum_reactions} r
                                   JOIN {hiveforum_posts} rp ON rp.id = r.postid
                                  WHERE rp.discussion = d.id) AS reactioncount,
+                               (SELECT COUNT(1)
+                                  FROM {hiveforum_reactions} lr
+                                  JOIN {hiveforum_posts} lp ON lp.id = lr.postid
+                                 WHERE lp.discussion = d.id AND lr.reactiontype = 'like') AS likecount,
                                rd.timeread,
-                               CASE WHEN s.id IS NULL THEN 0 ELSE 1 END AS following
+                               CASE WHEN $followsql THEN 1 ELSE 0 END AS following
                           FROM {hiveforum_discussions} d
                      LEFT JOIN {hiveforum_reads} rd ON rd.discussion = d.id AND rd.userid = :readuser
                      LEFT JOIN {hiveforum_subscriptions} s ON s.discussion = d.id AND s.userid = :subuser
                          WHERE $where
                        ) x
               ORDER BY x.pinned DESC, $orderby";
-        $params['readuser'] = $userid;
-        $params['subuser'] = $userid;
 
-        $records = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
+        $records = $DB->get_records_sql($sql, $params + $followparams, $page * $perpage, $perpage);
 
         $countsql = "SELECT COUNT(1)
                        FROM {hiveforum_discussions} d
@@ -120,23 +130,37 @@ final class api {
      * @param string $filter
      * @param string $search
      * @param string $tag
+     * @param int $activegroup
      * @return array{0: string, 1: array}
      */
-    private static function build_list_where(forum $forum, int $userid, string $filter, string $search, string $tag): array {
+    private static function build_list_where(
+        forum $forum,
+        int $userid,
+        string $filter,
+        string $search,
+        string $tag,
+        int $activegroup = 0
+    ): array {
         global $DB;
 
-        $where = ['d.hiveforum = :forumid'];
-        $params = ['forumid' => $forum->instance->id];
+        [$groupsql, $params] = $forum->group_sql($userid, $activegroup);
+        $where = ['d.hiveforum = :forumid', $groupsql];
+        $params['forumid'] = $forum->instance->id;
 
         switch ($filter) {
             case 'unread':
                 $where[] = '(rd.id IS NULL OR rd.timeread < d.timemodified)';
                 break;
             case 'following':
-                $where[] = 's.id IS NOT NULL';
+                [$followsql, $followparams] = subscriptions::following_sql($forum, $userid);
+                $where[] = $followsql;
+                $params += $followparams;
                 break;
             case 'questions':
                 $where[] = "d.posttype = 'question' AND d.resolved = 0";
+                break;
+            case 'unanswered':
+                $where[] = 'NOT EXISTS (SELECT 1 FROM {hiveforum_posts} ua WHERE ua.discussion = d.id AND ua.parent <> 0)';
                 break;
             case 'mine':
                 $where[] = 'd.userid = :mine';
@@ -167,21 +191,27 @@ final class api {
      *
      * @param forum $forum
      * @param int $userid
-     * @return array{all: int, unread: int, following: int, questions: int, mine: int}
+     * @param int $activegroup
+     * @return array{all: int, unread: int, following: int, questions: int, unanswered: int, mine: int}
      */
-    public static function get_filter_counts(forum $forum, int $userid): array {
+    public static function get_filter_counts(forum $forum, int $userid, int $activegroup = 0): array {
         global $DB;
 
+        [$groupsql, $params] = $forum->group_sql($userid, $activegroup);
+        [$followsql, $followparams] = subscriptions::following_sql($forum, $userid);
         $sql = "SELECT COUNT(1) AS total,
                        SUM(CASE WHEN rd.id IS NULL OR rd.timeread < d.timemodified THEN 1 ELSE 0 END) AS unread,
-                       SUM(CASE WHEN s.id IS NULL THEN 0 ELSE 1 END) AS following,
+                       SUM(CASE WHEN $followsql THEN 1 ELSE 0 END) AS following,
                        SUM(CASE WHEN d.posttype = 'question' AND d.resolved = 0 THEN 1 ELSE 0 END) AS questions,
+                       SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM {hiveforum_posts} ua
+                                                  WHERE ua.discussion = d.id AND ua.parent <> 0)
+                                THEN 1 ELSE 0 END) AS unanswered,
                        SUM(CASE WHEN d.userid = :mine THEN 1 ELSE 0 END) AS mine
                   FROM {hiveforum_discussions} d
              LEFT JOIN {hiveforum_reads} rd ON rd.discussion = d.id AND rd.userid = :readuser
              LEFT JOIN {hiveforum_subscriptions} s ON s.discussion = d.id AND s.userid = :subuser
-                 WHERE d.hiveforum = :forumid";
-        $row = $DB->get_record_sql($sql, [
+                 WHERE d.hiveforum = :forumid AND $groupsql";
+        $row = $DB->get_record_sql($sql, $params + $followparams + [
             'mine' => $userid, 'readuser' => $userid, 'subuser' => $userid, 'forumid' => $forum->instance->id,
         ]);
 
@@ -190,39 +220,44 @@ final class api {
             'unread' => (int) $row->unread,
             'following' => (int) $row->following,
             'questions' => (int) $row->questions,
+            'unanswered' => (int) $row->unanswered,
             'mine' => (int) $row->mine,
         ];
     }
 
     /**
-     * Number of unread discussions in a forum for a user.
+     * Number of unread discussions (among the ones the user can see) for a user.
      *
-     * @param int $forumid
+     * @param forum $forum
      * @param int $userid
      * @return int
      */
-    public static function count_unread(int $forumid, int $userid): int {
+    public static function count_unread(forum $forum, int $userid): int {
         global $DB;
+        [$groupsql, $params] = $forum->group_sql($userid);
         $sql = "SELECT COUNT(1)
                   FROM {hiveforum_discussions} d
              LEFT JOIN {hiveforum_reads} rd ON rd.discussion = d.id AND rd.userid = :userid
-                 WHERE d.hiveforum = :forumid AND (rd.id IS NULL OR rd.timeread < d.timemodified)";
-        return (int) $DB->count_records_sql($sql, ['userid' => $userid, 'forumid' => $forumid]);
+                 WHERE d.hiveforum = :forumid AND $groupsql AND (rd.id IS NULL OR rd.timeread < d.timemodified)";
+        return (int) $DB->count_records_sql($sql, $params + ['userid' => $userid, 'forumid' => $forum->instance->id]);
     }
 
     /**
-     * Forum wide statistics for the header.
+     * Statistics for the header (restricted to what the user can see).
      *
      * @param forum $forum
+     * @param int $userid
+     * @param int $activegroup
      * @return array{discussions: int, posts: int, participants: int}
      */
-    public static function get_stats(forum $forum): array {
+    public static function get_stats(forum $forum, int $userid, int $activegroup = 0): array {
         global $DB;
+        [$groupsql, $params] = $forum->group_sql($userid, $activegroup);
         $sql = "SELECT COUNT(DISTINCT d.id) AS discussions, COUNT(p.id) AS posts, COUNT(DISTINCT p.userid) AS participants
                   FROM {hiveforum_discussions} d
                   JOIN {hiveforum_posts} p ON p.discussion = d.id
-                 WHERE d.hiveforum = :forumid";
-        $row = $DB->get_record_sql($sql, ['forumid' => $forum->instance->id]);
+                 WHERE d.hiveforum = :forumid AND $groupsql";
+        $row = $DB->get_record_sql($sql, $params + ['forumid' => $forum->instance->id]);
         return [
             'discussions' => (int) $row->discussions,
             'posts' => (int) $row->posts,
@@ -234,18 +269,21 @@ final class api {
      * Most used tags of the forum.
      *
      * @param forum $forum
+     * @param int $userid
+     * @param int $activegroup
      * @param int $limit
      * @return array<int, array{name: string, count: int}>
      */
-    public static function get_popular_tags(forum $forum, int $limit = 12): array {
+    public static function get_popular_tags(forum $forum, int $userid, int $activegroup = 0, int $limit = 12): array {
         global $DB;
+        [$groupsql, $params] = $forum->group_sql($userid, $activegroup);
         $sql = "SELECT t.tag, COUNT(1) AS cnt
                   FROM {hiveforum_tags} t
                   JOIN {hiveforum_discussions} d ON d.id = t.discussion
-                 WHERE d.hiveforum = :forumid
+                 WHERE d.hiveforum = :forumid AND $groupsql
               GROUP BY t.tag
               ORDER BY cnt DESC, t.tag ASC";
-        $rs = $DB->get_recordset_sql($sql, ['forumid' => $forum->instance->id], 0, $limit);
+        $rs = $DB->get_recordset_sql($sql, $params + ['forumid' => $forum->instance->id], 0, $limit);
         $tags = [];
         foreach ($rs as $row) {
             $tags[] = ['name' => $row->tag, 'count' => (int) $row->cnt];
@@ -434,6 +472,7 @@ final class api {
      * @param string[] $tags
      * @param int|null $draftitemid draft area of the full editor, if any
      * @param array $editoroptions
+     * @param int $groupid target group (0 = all participants); must be allowed for the user
      * @return stdClass the created discussion (with ->firstpost set)
      */
     public static function create_discussion(
@@ -446,6 +485,7 @@ final class api {
         array $tags = [],
         ?int $draftitemid = null,
         array $editoroptions = [],
+        int $groupid = 0,
     ): stdClass {
         global $DB;
 
@@ -454,6 +494,12 @@ final class api {
             throw new \moodle_exception('errornameempty', 'hiveforum');
         }
         self::require_message($message);
+        if (!in_array($isquestion ? 'question' : 'discussion', $forum->get_allowed_post_types(), true)) {
+            throw new \moodle_exception('posttypenotallowed', 'hiveforum');
+        }
+        if (!array_key_exists($groupid, $forum->get_post_targets())) {
+            throw new \moodle_exception('cannotpostingroup', 'hiveforum');
+        }
 
         $now = time();
         $transaction = $DB->start_delegated_transaction();
@@ -467,6 +513,7 @@ final class api {
             'resolved' => 0,
             'posttype' => $isquestion ? 'question' : 'discussion',
             'usermodified' => $userid,
+            'groupid' => $forum->get_groupmode() === NOGROUPS ? 0 : $groupid,
             'timecreated' => $now,
             'timemodified' => $now,
         ];
@@ -504,9 +551,10 @@ final class api {
             self::set_tags($discussion->id, $tags);
         }
 
-        self::set_following((int) $discussion->id, $userid, true);
+        subscriptions::set_following($forum, (int) $discussion->id, $userid, true);
         self::mark_read((int) $discussion->id, $userid);
         self::bump_streak((int) $forum->instance->id, $userid);
+        mentions::process($forum, $discussion, $post);
 
         $transaction->allow_commit();
 
@@ -515,6 +563,9 @@ final class api {
             'context' => $forum->context,
             'other' => ['forumid' => $forum->instance->id],
         ])->trigger();
+
+        self::queue_notification($forum, (int) $post->id);
+        self::update_completion($forum, [$userid]);
 
         return $discussion;
     }
@@ -572,9 +623,10 @@ final class api {
             'usermodified' => $userid,
         ]);
 
-        self::set_following((int) $discussion->id, $userid, true);
+        subscriptions::set_following($forum, (int) $discussion->id, $userid, true);
         self::mark_read((int) $discussion->id, $userid);
         self::bump_streak((int) $forum->instance->id, $userid);
+        mentions::process($forum, $discussion, $post);
 
         $transaction->allow_commit();
 
@@ -584,10 +636,8 @@ final class api {
             'other' => ['discussionid' => $discussion->id, 'forumid' => $forum->instance->id],
         ])->trigger();
 
-        // Notify followers asynchronously.
-        $task = new \mod_hiveforum\task\notify_followers();
-        $task->set_custom_data(['postid' => (int) $post->id]);
-        \core\task\manager::queue_adhoc_task($task);
+        self::queue_notification($forum, (int) $post->id);
+        self::update_completion($forum, [$userid]);
 
         return $post;
     }
@@ -614,6 +664,8 @@ final class api {
         }
         $post->timemodified = time();
         $DB->update_record('hiveforum_posts', $post);
+        // Only the users newly mentioned by this edit are notified.
+        mentions::process($forum, $discussion, $post);
 
         \mod_hiveforum\event\post_updated::create([
             'objectid' => $post->id,
@@ -661,6 +713,7 @@ final class api {
 
         if ((int) $post->id === (int) $discussion->firstpost || (int) $post->parent === 0) {
             $postids = $DB->get_fieldset_select('hiveforum_posts', 'id', 'discussion = ?', [$discussion->id]);
+            $authors = $DB->get_fieldset_select('hiveforum_posts', 'DISTINCT userid', 'discussion = ?', [$discussion->id]);
             $transaction = $DB->start_delegated_transaction();
             self::delete_discussion_data([(int) $discussion->id]);
             $transaction->allow_commit();
@@ -672,6 +725,7 @@ final class api {
                 'context' => $forum->context,
                 'other' => ['forumid' => $forum->instance->id],
             ])->trigger();
+            self::update_completion($forum, array_map('intval', $authors));
             return true;
         }
 
@@ -693,7 +747,9 @@ final class api {
         $transaction = $DB->start_delegated_transaction();
         [$insql, $params] = $DB->get_in_or_equal($todelete);
         $removesanswer = $DB->record_exists_select('hiveforum_posts', "id $insql AND isaccepted = 1", $params);
+        $authors = $DB->get_fieldset_select('hiveforum_posts', 'DISTINCT userid', "id $insql", $params);
         $DB->delete_records_select('hiveforum_reactions', "postid $insql", $params);
+        $DB->delete_records_select('hiveforum_mentions', "postid $insql", $params);
         $DB->delete_records_select('hiveforum_posts', "id $insql", $params);
         if ($removesanswer) {
             // The accepted answer is gone: the question is open again.
@@ -710,6 +766,7 @@ final class api {
             'context' => $forum->context,
             'other' => ['discussionid' => $discussion->id, 'forumid' => $forum->instance->id],
         ])->trigger();
+        self::update_completion($forum, array_map('intval', $authors));
 
         return false;
     }
@@ -725,11 +782,9 @@ final class api {
             return;
         }
         [$insql, $params] = $DB->get_in_or_equal($discussionids);
-        $DB->delete_records_select(
-            'hiveforum_reactions',
-            "postid IN (SELECT id FROM {hiveforum_posts} WHERE discussion $insql)",
-            $params
-        );
+        foreach (['hiveforum_reactions', 'hiveforum_mentions'] as $table) {
+            $DB->delete_records_select($table, "postid IN (SELECT id FROM {hiveforum_posts} WHERE discussion $insql)", $params);
+        }
         $DB->delete_records_select('hiveforum_posts', "discussion $insql", $params);
         $DB->delete_records_select('hiveforum_tags', "discussion $insql", $params);
         $DB->delete_records_select('hiveforum_reads', "discussion $insql", $params);
@@ -824,6 +879,7 @@ final class api {
         }
 
         $accept = empty($post->isaccepted);
+        $previous = $DB->get_fieldset_select('hiveforum_posts', 'userid', 'discussion = ? AND isaccepted = 1', [$discussion->id]);
         $transaction = $DB->start_delegated_transaction();
         $DB->set_field('hiveforum_posts', 'isaccepted', 0, ['discussion' => $discussion->id]);
         if ($accept) {
@@ -833,37 +889,10 @@ final class api {
         $transaction->allow_commit();
 
         $post->isaccepted = (int) $accept;
-        return $accept;
-    }
-
-    /**
-     * Follow / unfollow a discussion.
-     *
-     * @param int $discussionid
-     * @param int $userid
-     * @param bool $follow
-     */
-    public static function set_following(int $discussionid, int $userid, bool $follow): void {
-        global $DB;
-        $params = ['discussion' => $discussionid, 'userid' => $userid];
-        $exists = $DB->record_exists('hiveforum_subscriptions', $params);
-        if ($follow && !$exists) {
-            $DB->insert_record('hiveforum_subscriptions', $params + ['timecreated' => time()]);
-        } else if (!$follow && $exists) {
-            $DB->delete_records('hiveforum_subscriptions', $params);
+        if ($forum = forum::from_instance_id((int) $discussion->hiveforum)) {
+            self::update_completion($forum, array_merge([(int) $post->userid], array_map('intval', $previous)));
         }
-    }
-
-    /**
-     * Is the user following the discussion?
-     *
-     * @param int $discussionid
-     * @param int $userid
-     * @return bool
-     */
-    public static function is_following(int $discussionid, int $userid): bool {
-        global $DB;
-        return $DB->record_exists('hiveforum_subscriptions', ['discussion' => $discussionid, 'userid' => $userid]);
+        return $accept;
     }
 
     /**
@@ -894,7 +923,13 @@ final class api {
      */
     public static function mark_all_read(forum $forum, int $userid): void {
         global $DB;
-        $ids = $DB->get_fieldset_select('hiveforum_discussions', 'id', 'hiveforum = ?', [$forum->instance->id]);
+        [$groupsql, $params] = $forum->group_sql($userid);
+        $ids = $DB->get_fieldset_select(
+            'hiveforum_discussions',
+            'id',
+            "hiveforum = :forumid AND $groupsql",
+            $params + ['forumid' => $forum->instance->id]
+        );
         $transaction = $DB->start_delegated_transaction();
         foreach ($ids as $id) {
             self::mark_read((int) $id, $userid);
@@ -985,6 +1020,45 @@ final class api {
      */
     public static function current_week(): int {
         return (int) floor(\core\di::get(\core\clock::class)->time() / WEEKSECS);
+    }
+
+    /**
+     * Queue the notification of a new post (followers and forum subscribers).
+     *
+     * @param forum $forum
+     * @param int $postid
+     */
+    private static function queue_notification(forum $forum, int $postid): void {
+        if (!subscriptions::notifications_enabled($forum) || subscriptions::get_mode($forum) === subscriptions::DISABLED) {
+            return;
+        }
+        $task = new \mod_hiveforum\task\notify_followers();
+        $task->set_custom_data(['postid' => $postid]);
+        \core\task\manager::queue_adhoc_task($task);
+    }
+
+    /**
+     * Re-evaluate the custom completion rules for some users.
+     *
+     * @param forum $forum
+     * @param int[] $userids
+     */
+    public static function update_completion(forum $forum, array $userids): void {
+        global $CFG;
+        require_once($CFG->libdir . '/completionlib.php');
+        $instance = $forum->instance;
+        $hasrules = !empty($instance->completiondiscussions) || !empty($instance->completionreplies)
+            || !empty($instance->completionposts) || !empty($instance->completionaccepted);
+        if (!$hasrules) {
+            return;
+        }
+        $completion = new \completion_info($forum->course);
+        if (!$completion->is_enabled($forum->cm) || $forum->cm->completion != COMPLETION_TRACKING_AUTOMATIC) {
+            return;
+        }
+        foreach (array_unique($userids) as $userid) {
+            $completion->update_state($forum->cm, COMPLETION_UNKNOWN, $userid);
+        }
     }
 
     /**

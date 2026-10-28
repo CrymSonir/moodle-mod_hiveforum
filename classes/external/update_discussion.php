@@ -65,6 +65,7 @@ class update_discussion extends external_api {
         $params = self::validate_parameters(self::execute_parameters(), compact('discussionid', 'name', 'tags'));
         [$forum, $discussion] = forum::from_discussion_id($params['discussionid']);
         self::validate_context($forum->context);
+        $forum->require_can_see_discussion($discussion);
         $forum->require($forum->can_edit_post((object) ['userid' => $discussion->userid]), 'edit');
 
         api::update_discussion($forum, $discussion, $params['name'], $params['tags']);

@@ -83,6 +83,7 @@ final class structures {
             'replycount' => new external_value(PARAM_INT, 'Number of replies'),
             'reactions' => self::reactions(),
             'tags' => new external_multiple_structure(new external_value(PARAM_TAG, 'Tag')),
+            'groupname' => new external_value(PARAM_TEXT, 'Group name, empty for all participants'),
             'timecreated' => new external_value(PARAM_INT, 'Time created'),
             'timemodified' => new external_value(PARAM_INT, 'Time of last activity'),
             'url' => new external_value(PARAM_URL, 'Discussion URL'),
@@ -110,7 +111,10 @@ final class structures {
             'timemodified' => new external_value(PARAM_INT, 'Time of last activity'),
             'canpin' => new external_value(PARAM_BOOL, 'Can pin'),
             'canresolve' => new external_value(PARAM_BOOL, 'Can resolve / accept answers'),
-            'canfollow' => new external_value(PARAM_BOOL, 'Can follow'),
+            'canfollow' => new external_value(PARAM_BOOL, 'Can follow / unfollow'),
+            'followforced' => new external_value(PARAM_BOOL, 'Subscription is forced'),
+            'groupname' => new external_value(PARAM_TEXT, 'Group name, empty for all participants'),
+            'canreply' => new external_value(PARAM_BOOL, 'Can reply to this discussion'),
             'canrename' => new external_value(PARAM_BOOL, 'Can rename'),
         ]);
     }
@@ -152,7 +156,23 @@ final class structures {
             'unread' => new external_value(PARAM_INT, 'Unread'),
             'following' => new external_value(PARAM_INT, 'Following'),
             'questions' => new external_value(PARAM_INT, 'Open questions'),
+            'unanswered' => new external_value(PARAM_INT, 'Without reply'),
             'mine' => new external_value(PARAM_INT, 'Started by me'),
+        ]);
+    }
+
+    /**
+     * Notification preferences.
+     *
+     * @return external_single_structure
+     */
+    public static function preferences(): external_single_structure {
+        return new external_single_structure([
+            'subscriptionmode' => new external_value(PARAM_INT, '0 optional, 1 forced, 2 auto, 3 disabled'),
+            'forumsubscribed' => new external_value(PARAM_BOOL, 'Subscribed to the whole forum'),
+            'canchange' => new external_value(PARAM_BOOL, 'Can change the forum subscription'),
+            'digest' => new external_value(PARAM_BOOL, 'Daily digest instead of one notification per post'),
+            'notificationsenabled' => new external_value(PARAM_BOOL, 'Notifications are sent'),
         ]);
     }
 }

@@ -143,6 +143,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
           submitLabel: t("savechanges"),
           autoFocus: true,
           onSubmit: (message) => thread.update(post, message),
+          mentions: { cmid: thread.cmid, discussionid: discussion.id },
           onCancel: () => thread.setEditing(null)
         },
         void 0,
@@ -159,7 +160,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
         columnNumber: 21
       }, this) : /* @__PURE__ */ jsxDEV(Message, { html: post.message }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-        lineNumber: 121,
+        lineNumber: 122,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV("footer", { className: "hf-post__foot", children: [
@@ -175,13 +176,13 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
           false,
           {
             fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-            lineNumber: 126,
+            lineNumber: 127,
             columnNumber: 25
           },
           this
         ),
         /* @__PURE__ */ jsxDEV("div", { className: "hf-post__actions", children: [
-          caps.canreply && /* @__PURE__ */ jsxDEV(
+          discussion.canreply && /* @__PURE__ */ jsxDEV(
             "button",
             {
               type: "button",
@@ -191,7 +192,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
               children: [
                 /* @__PURE__ */ jsxDEV(Icon, { name: "reply", size: 15 }, void 0, false, {
                   fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                  lineNumber: 137,
+                  lineNumber: 138,
                   columnNumber: 33
                 }, this),
                 " ",
@@ -202,7 +203,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
             true,
             {
               fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-              lineNumber: 135,
+              lineNumber: 136,
               columnNumber: 29
             },
             this
@@ -217,7 +218,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
               children: [
                 /* @__PURE__ */ jsxDEV(Icon, { name: "checkcircle", size: 15 }, void 0, false, {
                   fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                  lineNumber: 143,
+                  lineNumber: 144,
                   columnNumber: 33
                 }, this),
                 " ",
@@ -228,7 +229,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
             true,
             {
               fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-              lineNumber: 141,
+              lineNumber: 142,
               columnNumber: 29
             },
             this
@@ -244,7 +245,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
                 "aria-label": t("copylink"),
                 children: /* @__PURE__ */ jsxDEV(Icon, { name: "link", size: 15 }, void 0, false, {
                   fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                  lineNumber: 149,
+                  lineNumber: 150,
                   columnNumber: 33
                 }, this)
               },
@@ -252,7 +253,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
               false,
               {
                 fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                lineNumber: 147,
+                lineNumber: 148,
                 columnNumber: 29
               },
               this
@@ -267,7 +268,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
                 "aria-label": t("edit"),
                 children: /* @__PURE__ */ jsxDEV(Icon, { name: "edit", size: 15 }, void 0, false, {
                   fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                  lineNumber: 155,
+                  lineNumber: 156,
                   columnNumber: 37
                 }, this)
               },
@@ -275,17 +276,17 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
               false,
               {
                 fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                lineNumber: 152,
+                lineNumber: 153,
                 columnNumber: 33
               },
               this
             ) : /* @__PURE__ */ jsxDEV("a", { className: "hf-iconbtn hf-iconbtn--sm", href: post.editurl, title: t("edit"), "aria-label": t("edit"), children: /* @__PURE__ */ jsxDEV(Icon, { name: "edit", size: 15 }, void 0, false, {
               fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-              lineNumber: 159,
+              lineNumber: 160,
               columnNumber: 37
             }, this) }, void 0, false, {
               fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-              lineNumber: 158,
+              lineNumber: 159,
               columnNumber: 33
             }, this)),
             post.candelete && /* @__PURE__ */ jsxDEV(
@@ -298,7 +299,7 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
                 "aria-label": t("delete"),
                 children: /* @__PURE__ */ jsxDEV(Icon, { name: "trash", size: 15 }, void 0, false, {
                   fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                  lineNumber: 165,
+                  lineNumber: 166,
                   columnNumber: 37
                 }, this)
               },
@@ -306,24 +307,24 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
               false,
               {
                 fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-                lineNumber: 163,
+                lineNumber: 164,
                 columnNumber: 33
               },
               this
             )
           ] }, void 0, true, {
             fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-            lineNumber: 146,
+            lineNumber: 147,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-          lineNumber: 133,
+          lineNumber: 134,
           columnNumber: 21
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-        lineNumber: 124,
+        lineNumber: 125,
         columnNumber: 17
       }, this),
       isReplying && /* @__PURE__ */ jsxDEV("div", { className: "hf-post__reply", children: /* @__PURE__ */ jsxDEV(
@@ -336,19 +337,20 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
           autoFocus: true,
           user: currentuser,
           onSubmit: (message) => thread.reply(post.id, message),
+          mentions: { cmid: thread.cmid, discussionid: discussion.id },
           onCancel: () => thread.setReplyingTo(null)
         },
         void 0,
         false,
         {
           fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-          lineNumber: 174,
+          lineNumber: 175,
           columnNumber: 25
         },
         this
       ) }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-        lineNumber: 173,
+        lineNumber: 174,
         columnNumber: 21
       }, this)
     ] }, void 0, true, {
@@ -360,13 +362,13 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
       /* @__PURE__ */ jsxDEV("button", { type: "button", className: "hf-collapse", onClick: () => setCollapsed(!collapsed), "aria-expanded": !collapsed, children: [
         /* @__PURE__ */ jsxDEV(Icon, { name: collapsed ? "chevronright" : "chevrondown", size: 14 }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-          lineNumber: 191,
+          lineNumber: 193,
           columnNumber: 25
         }, this),
         collapsed ? t.plural(node.descendants, "showonereply", "showreplies") : t.plural(node.descendants, "hideonereply", "hidereplies")
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-        lineNumber: 190,
+        lineNumber: 192,
         columnNumber: 21
       }, this),
       !collapsed && /* @__PURE__ */ jsxDEV("ol", { className: "hf-thread__children", children: node.children.map((child) => /* @__PURE__ */ jsxDEV(
@@ -381,18 +383,18 @@ function PostItem({ post, node, depth = 0, parentAuthor, variant = "reply" }) {
         false,
         {
           fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-          lineNumber: 199,
+          lineNumber: 201,
           columnNumber: 33
         },
         this
       )) }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-        lineNumber: 197,
+        lineNumber: 199,
         columnNumber: 25
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/thread/PostItem.tsx",
-      lineNumber: 189,
+      lineNumber: 191,
       columnNumber: 17
     }, this)
   ] }, void 0, true, {

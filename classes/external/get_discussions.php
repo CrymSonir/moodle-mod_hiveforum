@@ -46,6 +46,7 @@ class get_discussions extends external_api {
             'tag' => new external_value(PARAM_TAG, 'Tag', VALUE_DEFAULT, ''),
             'sort' => new external_value(PARAM_ALPHA, 'recent|newest|popular', VALUE_DEFAULT, 'recent'),
             'page' => new external_value(PARAM_INT, 'Zero based page', VALUE_DEFAULT, 0),
+            'groupid' => new external_value(PARAM_INT, 'Active group, -1 for the current one', VALUE_DEFAULT, -1),
         ]);
     }
 
@@ -58,6 +59,7 @@ class get_discussions extends external_api {
      * @param string $tag
      * @param string $sort
      * @param int $page
+     * @param int $groupid
      * @return array
      */
     public static function execute(
@@ -66,15 +68,17 @@ class get_discussions extends external_api {
         string $search = '',
         string $tag = '',
         string $sort = 'recent',
-        int $page = 0
+        int $page = 0,
+        int $groupid = -1
     ): array {
         global $USER;
 
-        $params = self::validate_parameters(self::execute_parameters(), compact('cmid', 'filter', 'search', 'tag', 'sort', 'page'));
+        $params = self::validate_parameters(self::execute_parameters(), compact('cmid', 'filter', 'search', 'tag', 'sort', 'page', 'groupid'));
         $forum = forum::from_cmid($params['cmid']);
         self::validate_context($forum->context);
         require_capability('mod/hiveforum:view', $forum->context);
 
+        $activegroup = $forum->resolve_active_group($params['groupid'] < 0 ? null : $params['groupid']);
         $filter = in_array($params['filter'], api::FILTERS, true) ? $params['filter'] : 'all';
         $sort = in_array($params['sort'], api::SORTS, true) ? $params['sort'] : 'recent';
 
@@ -86,7 +90,8 @@ class get_discussions extends external_api {
             $params['tag'],
             $sort,
             max(0, $params['page']),
-            api::PERPAGE
+            api::PERPAGE,
+            $activegroup
         );
         $exporter = new exporter($forum);
 
@@ -94,7 +99,7 @@ class get_discussions extends external_api {
             'discussions' => $exporter->discussions($list['discussions']),
             'total' => $list['total'],
             'perpage' => api::PERPAGE,
-            'counts' => api::get_filter_counts($forum, (int) $USER->id),
+            'counts' => api::get_filter_counts($forum, (int) $USER->id, $activegroup),
         ];
     }
 

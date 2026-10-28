@@ -72,10 +72,10 @@ final class api_test extends \advanced_testcase {
         $this->assertEquals('question', $record->posttype);
         $this->assertNotEmpty($record->firstpost);
         $this->assertEquals($this->alice->id, $record->usermodified);
-        $this->assertTrue(api::is_following((int) $d->id, (int) $this->alice->id));
+        $this->assertTrue(subscriptions::is_following($this->forum, (int) $d->id, (int) $this->alice->id));
         $this->assertEquals(['tp1', 'graphs'], api::get_tags([(int) $d->id])[(int) $d->id]);
-        $this->assertEquals(0, api::count_unread((int) $this->forum->instance->id, (int) $this->alice->id));
-        $this->assertEquals(1, api::count_unread((int) $this->forum->instance->id, (int) $this->bob->id));
+        $this->assertEquals(0, api::count_unread($this->forum, (int) $this->alice->id));
+        $this->assertEquals(1, api::count_unread($this->forum, (int) $this->bob->id));
         $this->assertEquals(1, $DB->get_field('hiveforum_streaks', 'currentstreak', ['userid' => $this->alice->id]));
     }
 
@@ -101,11 +101,12 @@ final class api_test extends \advanced_testcase {
         $this->assertEquals($d->firstpost, $post->parent);
         $record = $DB->get_record('hiveforum_discussions', ['id' => $d->id]);
         $this->assertEquals($this->bob->id, $record->usermodified);
-        $this->assertEquals(1, api::count_unread((int) $this->forum->instance->id, (int) $this->alice->id));
-        $this->assertTrue(api::is_following((int) $d->id, (int) $this->bob->id));
+        $this->assertEquals(1, api::count_unread($this->forum, (int) $this->alice->id));
+        $this->assertTrue(subscriptions::is_following($this->forum, (int) $d->id, (int) $this->bob->id));
 
         // The followers are notified through an ad-hoc task.
-        $this->assertCount(1, \core\task\manager::get_adhoc_tasks(\mod_hiveforum\task\notify_followers::class));
+        // One task for the new discussion (forum subscribers), one for the reply.
+        $this->assertCount(2, \core\task\manager::get_adhoc_tasks(\mod_hiveforum\task\notify_followers::class));
     }
 
     public function test_add_post_rejects_parent_from_another_discussion(): void {
@@ -133,10 +134,10 @@ final class api_test extends \advanced_testcase {
         $this->assertEquals('Beta question', api::get_discussions($this->forum, $uid, 'all', '', '', 'popular')['discussions'][0]->name);
 
         $counts = api::get_filter_counts($this->forum, $uid);
-        $this->assertEquals(['all' => 2, 'unread' => 1, 'following' => 1, 'questions' => 1, 'mine' => 1], $counts);
+        $this->assertEquals(['all' => 2, 'unread' => 1, 'following' => 1, 'questions' => 1, 'unanswered' => 1, 'mine' => 1], $counts);
 
         api::mark_all_read($this->forum, $uid);
-        $this->assertEquals(0, api::count_unread((int) $this->forum->instance->id, $uid));
+        $this->assertEquals(0, api::count_unread($this->forum, $uid));
     }
 
     public function test_pinned_first(): void {

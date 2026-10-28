@@ -43,7 +43,8 @@ if ($discussionid) {
     [$forum, $discussion] = forum::from_discussion_id($discussionid);
     require_login($forum->course, false, $forum->cm);
     require_sesskey();
-    $forum->require($forum->can_reply(), 'reply');
+    $forum->require_can_see_discussion($discussion);
+    $forum->require($forum->can_reply_to($discussion), 'reply');
 
     $message = required_param('message', PARAM_RAW);
     $post = api::add_post(
@@ -78,6 +79,7 @@ $editoroptions = [
 ];
 
 if ($post) {
+    $forum->require_can_see_discussion($discussion);
     $forum->require($forum->can_edit_post($post), 'edit');
     $isfirst = (int) $post->id === (int) $discussion->firstpost;
     $returnurl = new moodle_url('/mod/hiveforum/discuss.php', ['d' => $discussion->id], 'p' . $post->id);
@@ -101,6 +103,8 @@ $mform = new \mod_hiveforum\form\post_form(null, [
     'withtitle' => $isfirst,
     'allowtags' => !empty($forum->instance->allowtags),
     'editoroptions' => $editoroptions,
+    'posttypes' => $post ? [] : $forum->get_allowed_post_types(),
+    'groups' => !$post && $forum->get_groupmode() !== NOGROUPS ? $forum->get_post_targets() : [],
 ]);
 
 // Prepare the current data.
@@ -117,6 +121,9 @@ if ($post) {
     }
 } else {
     $data->id = null;
+    $targets = $forum->get_post_targets();
+    $active = $forum->resolve_active_group();
+    $data->groupid = array_key_exists($active, $targets) ? $active : (int) array_key_first($targets);
     $data->message = '';
     $data->messageformat = editors_get_preferred_format();
 }
@@ -149,16 +156,19 @@ if ($formdata = $mform->get_data()) {
     }
 
     $editor = $formdata->message_editor;
+    $types = $forum->get_allowed_post_types();
+    $isquestion = count($types) === 1 ? $types[0] === 'question' : !empty($formdata->isquestion);
     $newdiscussion = api::create_discussion(
         $forum,
         (int) $USER->id,
         $formdata->name,
         $editor['text'],
         (int) $editor['format'],
-        !empty($formdata->isquestion),
+        $isquestion,
         $tags,
         (int) $editor['itemid'],
-        $editoroptions
+        $editoroptions,
+        isset($formdata->groupid) ? (int) $formdata->groupid : (int) $data->groupid
     );
     redirect(new moodle_url('/mod/hiveforum/discuss.php', ['d' => $newdiscussion->id]));
 }

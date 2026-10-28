@@ -59,7 +59,8 @@ class add_post extends external_api {
         $params = self::validate_parameters(self::execute_parameters(), compact('discussionid', 'parentid', 'message'));
         [$forum, $discussion] = forum::from_discussion_id($params['discussionid']);
         self::validate_context($forum->context);
-        $forum->require($forum->can_reply(), 'reply');
+        $forum->require_can_see_discussion($discussion);
+        $forum->require($forum->can_reply_to($discussion), 'reply');
 
         $post = api::add_post($forum, $discussion, $params['parentid'], (int) $USER->id, $params['message'], FORMAT_MARKDOWN);
         $post->reactions = [];

@@ -95,6 +95,18 @@ $functions = [
         'type' => 'write',
         'ajax' => true,
     ],
+    'mod_hiveforum_search_users' => [
+        'classname' => \mod_hiveforum\external\search_users::class,
+        'description' => 'Users that can be mentioned in a discussion.',
+        'type' => 'read',
+        'ajax' => true,
+    ],
+    'mod_hiveforum_set_preferences' => [
+        'classname' => \mod_hiveforum\external\set_preferences::class,
+        'description' => 'Forum subscription and digest preference of the current user.',
+        'type' => 'write',
+        'ajax' => true,
+    ],
     'mod_hiveforum_mark_all_read' => [
         'classname' => \mod_hiveforum\external\mark_all_read::class,
         'description' => 'Mark every discussion as read.',

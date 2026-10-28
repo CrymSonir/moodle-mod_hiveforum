@@ -117,6 +117,15 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    'mod/hiveforum:managesubscriptions' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
     'mod/hiveforum:viewreports' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,

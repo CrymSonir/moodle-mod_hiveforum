@@ -27,7 +27,7 @@ import {useStrings} from '@moodle/lms/mod_hiveforum/common/i18n';
 import {exception} from '@moodle/lms/mod_hiveforum/common/notify';
 import {createDiscussion} from '@moodle/lms/mod_hiveforum/common/repository';
 import TagInput from '@moodle/lms/mod_hiveforum/common/TagInput';
-import type {User} from '@moodle/lms/mod_hiveforum/common/types';
+import type {GroupTarget, User} from '@moodle/lms/mod_hiveforum/common/types';
 
 interface NewDiscussionProps {
     cmid: number;
@@ -35,15 +35,25 @@ interface NewDiscussionProps {
     suggestions: string[];
     fulleditorurl: string;
     user: User | null;
+    /** Types the user may start. */
+    posttypes: Array<'discussion' | 'question'>;
+    /** Groups the discussion can be addressed to (empty when the forum has no groups). */
+    targets: GroupTarget[];
+    /** Active group of the list, used as default target. */
+    activegroup: number;
     onClose: () => void;
 }
 
-export default function NewDiscussion({cmid, allowtags, suggestions, fulleditorurl, user, onClose}: NewDiscussionProps) {
+export default function NewDiscussion({
+    cmid, allowtags, suggestions, fulleditorurl, user, posttypes, targets, activegroup, onClose,
+}: NewDiscussionProps) {
     const t = useStrings();
     const titleId = useId();
     const titleRef = useRef<HTMLInputElement>(null);
     const [name, setName] = useState('');
-    const [isquestion, setIsquestion] = useState(false);
+    const [isquestion, setIsquestion] = useState(posttypes.length === 1 && posttypes[0] === 'question');
+    const [groupid, setGroupid] = useState(() =>
+        targets.some((g) => g.id === activegroup) ? activegroup : (targets[0]?.id ?? 0));
     const [tags, setTags] = useState<string[]>([]);
     const [titleError, setTitleError] = useState(false);
 
@@ -56,7 +66,7 @@ export default function NewDiscussion({cmid, allowtags, suggestions, fulleditoru
             throw new Error('Title required');
         }
         try {
-            const result = await createDiscussion({cmid, name: name.trim(), message, isquestion, tags});
+            const result = await createDiscussion({cmid, name: name.trim(), message, isquestion, tags, groupid});
             window.location.href = result.url;
         } catch (error) {
             exception(error);
@@ -75,6 +85,7 @@ export default function NewDiscussion({cmid, allowtags, suggestions, fulleditoru
                 </button>
             </div>
 
+            {posttypes.length > 1 && (
             <div className="hf-segmented" role="radiogroup" aria-label={t('discussiontype')}>
                 <button type="button" role="radio" aria-checked={!isquestion}
                     className={!isquestion ? 'is-active' : ''} onClick={() => setIsquestion(false)}>
@@ -85,6 +96,7 @@ export default function NewDiscussion({cmid, allowtags, suggestions, fulleditoru
                     <Icon name="question" size={16} /> {t('typequestion')}
                 </button>
             </div>
+            )}
             <p className="hf-newdiscussion__help">{isquestion ? t('typequestion_help') : t('typediscussion_help')}</p>
 
             <label htmlFor={titleId} className="visually-hidden">{t('discussiontitle')}</label>
@@ -103,6 +115,16 @@ export default function NewDiscussion({cmid, allowtags, suggestions, fulleditoru
             />
             {titleError && <p className="hf-field-error">{t('errornameempty')}</p>}
 
+            {targets.length > 0 && (
+                <label className="hf-target">
+                    <Icon name="users2" size={15} />
+                    <span>{t('postto')}</span>
+                    <select value={groupid} onChange={(e) => setGroupid(Number(e.target.value))} disabled={targets.length === 1}>
+                        {targets.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                </label>
+            )}
+
             {allowtags && <TagInput tags={tags} onChange={setTags} suggestions={suggestions} />}
 
             <Composer
@@ -113,6 +135,7 @@ export default function NewDiscussion({cmid, allowtags, suggestions, fulleditoru
                 onSubmit={submit}
                 onCancel={onClose}
                 user={user}
+                mentions={{cmid, discussionid: 0}}
                 extra={
                     <a className="hf-fulleditor" href={fulleditorurl}>
                         <Icon name="expand" size={14} /> {t('fulleditor')}

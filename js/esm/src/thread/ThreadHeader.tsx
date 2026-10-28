@@ -86,6 +86,7 @@ export default function ThreadHeader({discussion: d, forumurl, replycount, parti
                 {d.isquestion && d.resolved && (
                     <span className="hf-badge hf-badge--resolved"><Icon name="check" size={12} />{t('resolved')}</span>
                 )}
+                {d.groupname && <span className="hf-badge hf-badge--group"><Icon name="users2" size={12} />{d.groupname}</span>}
             </div>
 
             {renaming ? (
@@ -145,6 +146,9 @@ export default function ThreadHeader({discussion: d, forumurl, replycount, parti
                     </span>
                 </div>
                 <div className="hf-threadhead__actions">
+                    {d.followforced && (
+                        <span className="hf-chip" title={t('modeexplain_1')}><Icon name="bellcheck" size={15} /> {t('followforced')}</span>
+                    )}
                     {d.canfollow && (
                         <button type="button" className={`btn btn-sm ${d.following ? 'btn-secondary hf-btn-following' : 'btn-outline-secondary'}`}
                             aria-pressed={d.following} disabled={busy === 'following'}

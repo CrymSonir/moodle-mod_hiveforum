@@ -24,6 +24,7 @@ import {createContext, useContext} from 'react';
 import type {Capabilities, Discussion, Post, User} from '@moodle/lms/mod_hiveforum/common/types';
 
 export interface ThreadActions {
+    cmid: number;
     discussion: Discussion;
     capabilities: Capabilities;
     currentuser: User | null;

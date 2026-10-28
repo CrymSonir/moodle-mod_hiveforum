@@ -11,6 +11,7 @@ import { jsxDEV } from "react/jsx-dev-runtime";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Icon from "@moodle/lms/mod_hiveforum/common/Icon";
 import { useStrings } from "@moodle/lms/mod_hiveforum/common/i18n";
+import { useMentions } from "@moodle/lms/mod_hiveforum/common/Mentions";
 import UserAvatar from "@moodle/lms/mod_hiveforum/common/UserAvatar";
 const drafts = {
   get(key) {
@@ -42,7 +43,8 @@ function Composer({
   user,
   compact = false,
   extra,
-  label
+  label,
+  mentions
 }) {
   const t = useStrings();
   const id = useId();
@@ -50,6 +52,7 @@ function Composer({
   const [value, setValue] = useState(() => initialValue || (draftKey ? drafts.get(draftKey) : ""));
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(autoFocus);
+  const mention = useMentions({ source: mentions, textareaRef, value, setValue });
   const formats = [
     { icon: "bold", label: t("format_bold"), before: "**", after: "**", placeholder: t("format_bold") },
     { icon: "italic", label: t("format_italic"), before: "_", after: "_", placeholder: t("format_italic") },
@@ -124,6 +127,9 @@ function Composer({
     }
   }, [value, busy, onSubmit, draftKey]);
   const onKeyDown = /* @__PURE__ */ __name((e) => {
+    if (mention.onKeyDown(e)) {
+      return;
+    }
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       submit();
@@ -139,19 +145,20 @@ function Composer({
   return /* @__PURE__ */ jsxDEV("div", { className: `hf-composer ${expanded ? "is-expanded" : ""} ${compact ? "hf-composer--compact" : ""}`, children: [
     user && /* @__PURE__ */ jsxDEV("div", { className: "hf-composer__avatar", children: /* @__PURE__ */ jsxDEV(UserAvatar, { user, size: "md", decorative: true }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-      lineNumber: 187,
+      lineNumber: 194,
       columnNumber: 59
     }, this) }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-      lineNumber: 187,
+      lineNumber: 194,
       columnNumber: 22
     }, this),
     /* @__PURE__ */ jsxDEV("div", { className: "hf-composer__box", children: [
       /* @__PURE__ */ jsxDEV("label", { htmlFor: id, className: "visually-hidden", children: label }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-        lineNumber: 189,
+        lineNumber: 196,
         columnNumber: 17
       }, this),
+      mention.list,
       /* @__PURE__ */ jsxDEV(
         "textarea",
         {
@@ -163,15 +170,20 @@ function Composer({
           rows: compact && !expanded ? 1 : 3,
           onChange: (e) => setValue(e.target.value),
           onKeyDown,
+          onSelect: mention.detect,
           onFocus: () => setFocused(true),
           onBlur: () => setFocused(false),
+          "aria-autocomplete": mention.enabled ? "list" : void 0,
+          "aria-controls": mention.open ? mention.listId : void 0,
+          "aria-expanded": mention.enabled ? mention.open : void 0,
+          "aria-activedescendant": mention.activeId,
           disabled: busy
         },
         void 0,
         false,
         {
           fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-          lineNumber: 190,
+          lineNumber: 198,
           columnNumber: 17
         },
         this
@@ -189,7 +201,7 @@ function Composer({
               onClick: () => applyFormat(format),
               children: /* @__PURE__ */ jsxDEV(Icon, { name: format.icon, size: 15 }, void 0, false, {
                 fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-                lineNumber: 216,
+                lineNumber: 229,
                 columnNumber: 37
               }, this)
             },
@@ -197,26 +209,50 @@ function Composer({
             false,
             {
               fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-              lineNumber: 207,
+              lineNumber: 220,
               columnNumber: 33
             },
             this
           )),
+          mention.enabled && /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              type: "button",
+              className: "hf-iconbtn hf-iconbtn--sm",
+              title: t("mentionsomeone"),
+              "aria-label": t("mentionsomeone"),
+              onMouseDown: (e) => e.preventDefault(),
+              onClick: mention.startMention,
+              children: /* @__PURE__ */ jsxDEV(Icon, { name: "at", size: 15 }, void 0, false, {
+                fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
+                lineNumber: 241,
+                columnNumber: 37
+              }, this)
+            },
+            void 0,
+            false,
+            {
+              fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
+              lineNumber: 233,
+              columnNumber: 33
+            },
+            this
+          ),
           /* @__PURE__ */ jsxDEV("span", { className: "hf-composer__hint", children: t("markdownhint") }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-            lineNumber: 219,
+            lineNumber: 244,
             columnNumber: 29
           }, this)
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-          lineNumber: 205,
+          lineNumber: 218,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV("div", { className: "hf-composer__actions", children: [
           extra,
           onCancel && /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-link btn-sm", onClick: onCancel, disabled: busy, children: t("cancel") }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-            lineNumber: 224,
+            lineNumber: 249,
             columnNumber: 33
           }, this),
           /* @__PURE__ */ jsxDEV(
@@ -230,12 +266,12 @@ function Composer({
               children: [
                 busy ? /* @__PURE__ */ jsxDEV("span", { className: "spinner-border spinner-border-sm", "aria-hidden": "true" }, void 0, false, {
                   fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-                  lineNumber: 235,
+                  lineNumber: 260,
                   columnNumber: 41
                 }, this) : null,
                 /* @__PURE__ */ jsxDEV("span", { children: submitLabel }, void 0, false, {
                   fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-                  lineNumber: 236,
+                  lineNumber: 261,
                   columnNumber: 33
                 }, this)
               ]
@@ -244,29 +280,29 @@ function Composer({
             true,
             {
               fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-              lineNumber: 228,
+              lineNumber: 253,
               columnNumber: 29
             },
             this
           )
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-          lineNumber: 221,
+          lineNumber: 246,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-        lineNumber: 204,
+        lineNumber: 217,
         columnNumber: 21
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-      lineNumber: 188,
+      lineNumber: 195,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
     fileName: "../plugin/hiveforum/js/esm/src/common/Composer.tsx",
-    lineNumber: 186,
+    lineNumber: 193,
     columnNumber: 9
   }, this);
 }

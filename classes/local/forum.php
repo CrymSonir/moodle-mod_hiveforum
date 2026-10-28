@@ -34,6 +34,9 @@ final class forum {
     /** @var string[] Supported reaction types, in display order. */
     public const REACTIONS = ['like', 'love', 'idea'];
 
+    /** @var array<int, int[]> Group ids per user (request cache). */
+    private array $groupcache = [];
+
     /**
      * Constructor.
      *
@@ -144,21 +147,227 @@ final class forum {
     }
 
     /**
-     * Can the current user start a discussion?
+     * Can the current user start a discussion (at least one type, in at least one group)?
      *
      * @return bool
      */
     public function can_start_discussion(): bool {
-        return $this->is_real_user() && has_capability('mod/hiveforum:startdiscussion', $this->context);
+        return $this->is_real_user()
+            && has_capability('mod/hiveforum:startdiscussion', $this->context)
+            && $this->get_allowed_post_types()
+            && $this->get_post_targets();
     }
 
     /**
-     * Can the current user reply?
+     * Types of discussion the current user may start ('discussion', 'question').
+     *
+     * Moderators can always start both; other users depend on the "studentposting" setting.
+     *
+     * @return string[]
+     */
+    public function get_allowed_post_types(): array {
+        if ($this->can_moderate()) {
+            return ['discussion', 'question'];
+        }
+        return match ($this->instance->studentposting ?? 'all') {
+            'discussions' => ['discussion'],
+            'questions' => ['question'],
+            'none' => [],
+            default => ['discussion', 'question'],
+        };
+    }
+
+    /**
+     * Can the current user reply (in general, regardless of groups)?
      *
      * @return bool
      */
     public function can_reply(): bool {
         return $this->is_real_user() && has_capability('mod/hiveforum:reply', $this->context);
+    }
+
+    /**
+     * Can the current user reply to this discussion (groups taken into account)?
+     *
+     * @param stdClass $discussion
+     * @return bool
+     */
+    public function can_reply_to(stdClass $discussion): bool {
+        return $this->can_reply() && $this->can_see_discussion($discussion)
+            && ((int) $discussion->groupid === 0 || $this->can_post_in_group((int) $discussion->groupid));
+    }
+
+    // Groups.
+
+    /**
+     * Effective group mode (NOGROUPS, SEPARATEGROUPS or VISIBLEGROUPS).
+     *
+     * @return int
+     */
+    public function get_groupmode(): int {
+        return (int) groups_get_activity_groupmode($this->cm, $this->course);
+    }
+
+    /**
+     * Can the user see and post in every group?
+     *
+     * @param int|null $userid null for the current user
+     * @return bool
+     */
+    public function can_access_all_groups(?int $userid = null): bool {
+        return has_capability('moodle/site:accessallgroups', $this->context, $userid);
+    }
+
+    /**
+     * Ids of the groups of a user (restricted to the grouping of the activity).
+     *
+     * @param int $userid
+     * @return int[]
+     */
+    public function get_user_groupids(int $userid): array {
+        if (!isset($this->groupcache[$userid])) {
+            $groups = groups_get_all_groups($this->course->id, $userid, (int) $this->cm->groupingid, 'g.id');
+            $this->groupcache[$userid] = array_map('intval', array_keys($groups));
+        }
+        return $this->groupcache[$userid];
+    }
+
+    /**
+     * Groups of the activity (grouping applied), id => name.
+     *
+     * @return array<int, string>
+     */
+    public function get_all_groups(): array {
+        $groups = groups_get_all_groups($this->course->id, 0, (int) $this->cm->groupingid, 'g.id, g.name');
+        $result = [];
+        foreach ($groups as $group) {
+            $result[(int) $group->id] = format_string($group->name, true, ['context' => $this->context]);
+        }
+        return $result;
+    }
+
+    /**
+     * Can the user see a discussion?
+     *
+     * In separate groups, users without "access all groups" only see the discussions
+     * of their own groups and the ones addressed to all participants.
+     *
+     * @param stdClass $discussion
+     * @param int|null $userid null for the current user
+     * @return bool
+     */
+    public function can_see_discussion(stdClass $discussion, ?int $userid = null): bool {
+        global $USER;
+        $groupid = (int) ($discussion->groupid ?? 0);
+        if ($groupid === 0 || $this->get_groupmode() !== SEPARATEGROUPS) {
+            return true;
+        }
+        $userid = $userid ?? (int) $USER->id;
+        return $this->can_access_all_groups($userid) || in_array($groupid, $this->get_user_groupids($userid), true);
+    }
+
+    /**
+     * Throw when the current user cannot see the discussion.
+     *
+     * @param stdClass $discussion
+     */
+    public function require_can_see_discussion(stdClass $discussion): void {
+        $this->require_discussion_in_forum($discussion);
+        if (!$this->can_see_discussion($discussion)) {
+            throw new \moodle_exception('discussionnotvisible', 'hiveforum');
+        }
+    }
+
+    /**
+     * Can the user post in a group (0 = all participants)?
+     *
+     * @param int $groupid
+     * @param int|null $userid
+     * @return bool
+     */
+    public function can_post_in_group(int $groupid, ?int $userid = null): bool {
+        global $USER;
+        if ($this->get_groupmode() === NOGROUPS) {
+            return true;
+        }
+        $userid = $userid ?? (int) $USER->id;
+        if ($this->can_access_all_groups($userid)) {
+            return $groupid === 0 || array_key_exists($groupid, $this->get_all_groups());
+        }
+        return $groupid !== 0 && in_array($groupid, $this->get_user_groupids($userid), true);
+    }
+
+    /**
+     * Groups in which the current user can start a discussion, id => name (0 = all participants).
+     *
+     * @return array<int, string>
+     */
+    public function get_post_targets(): array {
+        global $USER;
+        if ($this->get_groupmode() === NOGROUPS) {
+            return [0 => ''];
+        }
+        $groups = $this->get_all_groups();
+        if ($this->can_access_all_groups()) {
+            return [0 => get_string('allparticipants')] + $groups;
+        }
+        $mine = array_flip($this->get_user_groupids((int) $USER->id));
+        return array_intersect_key($groups, $mine);
+    }
+
+    /**
+     * Resolve the active group of the current user.
+     *
+     * @param int|null $requested group asked for (web services); null reads/updates the session like the group menu
+     * @return int 0 for all participants
+     */
+    public function resolve_active_group(?int $requested = null): int {
+        global $USER;
+        $mode = $this->get_groupmode();
+        if ($mode === NOGROUPS) {
+            return 0;
+        }
+        if ($requested !== null) {
+            if ($this->can_access_all_groups() || $mode === VISIBLEGROUPS) {
+                if ($requested === 0 || array_key_exists($requested, $this->get_all_groups())) {
+                    return $requested;
+                }
+            } else if (in_array($requested, $this->get_user_groupids((int) $USER->id), true)) {
+                return $requested;
+            }
+        }
+        return (int) groups_get_activity_group($this->cm, $requested === null);
+    }
+
+    /**
+     * SQL restricting discussions (alias d) to what a user may see, optionally to an active group.
+     *
+     * @param int $userid
+     * @param int $activegroup 0 = every group the user can see
+     * @param string $alias discussion table alias
+     * @return array{0: string, 1: array}
+     */
+    public function group_sql(int $userid, int $activegroup = 0, string $alias = 'd'): array {
+        global $DB;
+        static $counter = 0;
+        $counter++;
+        $mode = $this->get_groupmode();
+        if ($mode === NOGROUPS) {
+            return ['1 = 1', []];
+        }
+        if ($activegroup > 0) {
+            $param = 'hfactivegroup' . $counter;
+            return ["($alias.groupid = :$param OR $alias.groupid = 0)", [$param => $activegroup]];
+        }
+        if ($mode === VISIBLEGROUPS || $this->can_access_all_groups($userid)) {
+            return ['1 = 1', []];
+        }
+        $groups = $this->get_user_groupids($userid);
+        if (!$groups) {
+            return ["$alias.groupid = 0", []];
+        }
+        [$insql, $params] = $DB->get_in_or_equal($groups, SQL_PARAMS_NAMED, 'hfgrp' . $counter . '_');
+        return ["($alias.groupid = 0 OR $alias.groupid $insql)", $params];
     }
 
     /**

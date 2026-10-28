@@ -154,6 +154,7 @@ function ThreadView(props) {
     }).catch(exception);
   }, [t]);
   const actions = {
+    cmid: props.cmid,
     discussion,
     capabilities,
     currentuser,
@@ -190,18 +191,18 @@ function ThreadView(props) {
       false,
       {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 220,
+        lineNumber: 221,
         columnNumber: 17
       },
       this
     ),
     root && /* @__PURE__ */ jsxDEV("ol", { className: "hf-thread__list hf-thread__list--opening", children: /* @__PURE__ */ jsxDEV(PostItem, { post: root, variant: "opening" }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 231,
+      lineNumber: 232,
       columnNumber: 25
     }, this) }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 230,
+      lineNumber: 231,
       columnNumber: 21
     }, this),
     accepted && /* @__PURE__ */ jsxDEV("a", { className: "hf-answer", href: `#p${accepted.id}`, onClick: (e) => {
@@ -210,62 +211,62 @@ function ThreadView(props) {
     }, children: [
       /* @__PURE__ */ jsxDEV("span", { className: "hf-answer__icon", children: /* @__PURE__ */ jsxDEV(Icon, { name: "checkcircle", size: 20 }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 240,
+        lineNumber: 241,
         columnNumber: 59
       }, this) }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 240,
+        lineNumber: 241,
         columnNumber: 25
       }, this),
       /* @__PURE__ */ jsxDEV("span", { className: "hf-answer__body", children: [
         /* @__PURE__ */ jsxDEV("strong", { children: t("acceptedanswerby", accepted.author.fullname) }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-          lineNumber: 242,
+          lineNumber: 243,
           columnNumber: 29
         }, this),
         /* @__PURE__ */ jsxDEV("span", { className: "hf-answer__excerpt", children: new DOMParser().parseFromString(accepted.message, "text/html").body.textContent?.slice(0, 180) }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-          lineNumber: 243,
+          lineNumber: 244,
           columnNumber: 29
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 241,
+        lineNumber: 242,
         columnNumber: 25
       }, this),
       /* @__PURE__ */ jsxDEV(Icon, { name: "arrowdown", size: 16 }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 247,
+        lineNumber: 248,
         columnNumber: 25
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 236,
+      lineNumber: 237,
       columnNumber: 21
     }, this),
     /* @__PURE__ */ jsxDEV("div", { className: "hf-thread__repliesheading", children: /* @__PURE__ */ jsxDEV("h3", { children: t.plural(replycount, "onereply", "repliescount", "noreplies") }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 252,
+      lineNumber: 253,
       columnNumber: 21
     }, this) }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 251,
+      lineNumber: 252,
       columnNumber: 17
     }, this),
     replies.length > 0 ? /* @__PURE__ */ jsxDEV("ol", { className: "hf-thread__list", children: replies.map((node) => /* @__PURE__ */ jsxDEV(PostItem, { post: node.post, node }, node.post.id, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 257,
+      lineNumber: 258,
       columnNumber: 48
     }, this)) }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 256,
+      lineNumber: 257,
       columnNumber: 21
     }, this) : /* @__PURE__ */ jsxDEV("p", { className: "hf-thread__empty", children: t("noreplies_help") }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 260,
+      lineNumber: 261,
       columnNumber: 21
     }, this),
-    capabilities.canreply && root && /* @__PURE__ */ jsxDEV("section", { className: "hf-thread__composer", "aria-label": t("addreply"), children: /* @__PURE__ */ jsxDEV(
+    discussion.canreply && root && /* @__PURE__ */ jsxDEV("section", { className: "hf-thread__composer", "aria-label": t("addreply"), children: /* @__PURE__ */ jsxDEV(
       Composer,
       {
         draftKey: `reply/${discussion.id}/0`,
@@ -274,35 +275,36 @@ function ThreadView(props) {
         submitLabel: t("reply"),
         user: currentuser,
         compact: true,
-        onSubmit: (message) => reply(root.id, message)
+        onSubmit: (message) => reply(root.id, message),
+        mentions: { cmid: props.cmid, discussionid: discussion.id }
       },
       void 0,
       false,
       {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 265,
+        lineNumber: 266,
         columnNumber: 25
       },
       this
     ) }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 264,
+      lineNumber: 265,
       columnNumber: 21
     }, this),
     incoming && /* @__PURE__ */ jsxDEV("div", { className: "hf-incoming", role: "status", children: /* @__PURE__ */ jsxDEV("button", { type: "button", className: "hf-incoming__btn", onClick: showIncoming, children: [
       /* @__PURE__ */ jsxDEV(Icon, { name: "arrowdown", size: 16 }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 280,
+        lineNumber: 282,
         columnNumber: 29
       }, this),
       t.plural(incoming.count, "newreplyone", "newreplymany")
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 279,
+      lineNumber: 281,
       columnNumber: 25
     }, this) }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-      lineNumber: 278,
+      lineNumber: 280,
       columnNumber: 21
     }, this),
     /* @__PURE__ */ jsxDEV(
@@ -320,18 +322,18 @@ function ThreadView(props) {
       false,
       {
         fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-        lineNumber: 286,
+        lineNumber: 288,
         columnNumber: 17
       },
       this
     )
   ] }, void 0, true, {
     fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-    lineNumber: 219,
+    lineNumber: 220,
     columnNumber: 13
   }, this) }, void 0, false, {
     fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-    lineNumber: 218,
+    lineNumber: 219,
     columnNumber: 9
   }, this);
 }
@@ -339,11 +341,11 @@ __name(ThreadView, "ThreadView");
 function Thread(props) {
   return /* @__PURE__ */ jsxDEV(StringsProvider, { strings: props.strings, children: /* @__PURE__ */ jsxDEV(ThreadView, { ...props }, void 0, false, {
     fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-    lineNumber: 303,
+    lineNumber: 305,
     columnNumber: 13
   }, this) }, void 0, false, {
     fileName: "../plugin/hiveforum/js/esm/src/Thread.tsx",
-    lineNumber: 302,
+    lineNumber: 304,
     columnNumber: 9
   }, this);
 }

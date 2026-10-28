@@ -16,11 +16,15 @@
 
 namespace mod_hiveforum\task;
 
-use core\url;
+use mod_hiveforum\local\forum;
+use mod_hiveforum\local\notifier;
+use mod_hiveforum\local\subscriptions;
 
 /**
- * Notify the followers of a discussion that a new reply was posted.
+ * Notify the followers of a discussion (and the forum subscribers) of a new post.
  *
+ * Users who chose the daily digest are skipped (they get it in the digest), and so are the
+ * users mentioned in the post (they receive the mention notification instead).
  * Runs as an ad-hoc task so posting stays instant whatever the number of followers.
  *
  * @package    mod_hiveforum
@@ -34,65 +38,34 @@ class notify_followers extends \core\task\adhoc_task {
     public function execute() {
         global $DB;
 
-        $data = $this->get_custom_data();
-        $post = $DB->get_record('hiveforum_posts', ['id' => $data->postid]);
+        $post = $DB->get_record('hiveforum_posts', ['id' => $this->get_custom_data()->postid]);
         if (!$post) {
             return; // Deleted in the meantime.
         }
-        [$forum, $discussion] = \mod_hiveforum\local\forum::from_discussion_id((int) $post->discussion);
+        [$forum, $discussion] = forum::from_discussion_id((int) $post->discussion);
+        if (!subscriptions::notifications_enabled($forum)) {
+            return;
+        }
         $author = \core_user::get_user($post->userid);
         if (!$author) {
             return;
         }
 
-        $followers = $DB->get_fieldset_select(
-            'hiveforum_subscriptions',
+        $skip = array_map('intval', $DB->get_fieldset_select('hiveforum_mentions', 'userid', 'postid = ?', [$post->id]));
+        $skip = array_merge($skip, array_map('intval', $DB->get_fieldset_select(
+            'hiveforum_digests',
             'userid',
-            'discussion = ? AND userid <> ?',
-            [$discussion->id, $post->userid]
-        );
-        if (!$followers) {
-            return;
-        }
+            'hiveforum = ? AND digest = 1',
+            [$forum->instance->id]
+        )));
+        $skip[] = (int) $post->userid;
 
-        $url = new url('/mod/hiveforum/discuss.php', ['d' => $discussion->id], 'p' . $post->id);
-        $discussionname = format_string($discussion->name, true, ['context' => $forum->context]);
-        $forumname = format_string($forum->instance->name, true, ['context' => $forum->context]);
-        $message = format_text($post->message, $post->messageformat, ['context' => $forum->context]);
-
-        foreach ($followers as $userid) {
+        $kind = (int) $post->id === (int) $discussion->firstpost ? 'discussion' : 'reply';
+        foreach (array_diff(subscriptions::get_followers($forum, $discussion), $skip) as $userid) {
             $user = \core_user::get_user($userid);
-            if (!$user || !empty($user->deleted) || !empty($user->suspended)) {
-                continue;
+            if (notifier::can_receive($forum, $discussion, $user)) {
+                notifier::send_post($forum, $discussion, $post, $author, $user, $kind);
             }
-            $modinfo = get_fast_modinfo($forum->course, $user->id);
-            $cm = $modinfo->get_cm($forum->get_cmid());
-            if (!$cm->uservisible || !has_capability('mod/hiveforum:view', $forum->context, $user)) {
-                continue;
-            }
-
-            $a = (object) [
-                'author' => fullname($author),
-                'discussion' => $discussionname,
-                'forum' => $forumname,
-                'url' => $url->out(false),
-            ];
-
-            $msg = new \core\message\message();
-            $msg->component = 'mod_hiveforum';
-            $msg->name = 'newreply';
-            $msg->userfrom = $author;
-            $msg->userto = $user;
-            $msg->courseid = $forum->course->id;
-            $msg->subject = get_string('notifynewreplysubject', 'hiveforum', $a);
-            $msg->fullmessage = get_string('notifynewreplytext', 'hiveforum', $a) . "\n\n" . html_to_text($message);
-            $msg->fullmessageformat = FORMAT_PLAIN;
-            $msg->fullmessagehtml = '<p>' . get_string('notifynewreplyhtml', 'hiveforum', $a) . '</p>' . $message;
-            $msg->smallmessage = get_string('notifynewreplysmall', 'hiveforum', $a);
-            $msg->notification = 1;
-            $msg->contexturl = $url->out(false);
-            $msg->contexturlname = $discussionname;
-            message_send($msg);
         }
     }
 }

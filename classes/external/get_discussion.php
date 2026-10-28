@@ -59,6 +59,7 @@ class get_discussion extends external_api {
         [$forum, $discussion] = forum::from_discussion_id($params['discussionid']);
         self::validate_context($forum->context);
         require_capability('mod/hiveforum:view', $forum->context);
+        $forum->require_can_see_discussion($discussion);
 
         if ($params['markread']) {
             api::mark_read((int) $discussion->id, (int) $USER->id);

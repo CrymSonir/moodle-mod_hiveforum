@@ -35,12 +35,14 @@ class backup_hiveforum_activity_structure_step extends backup_activity_structure
         $userinfo = $this->get_setting_value('userinfo');
 
         $hiveforum = new backup_nested_element('hiveforum', ['id'], [
-            'name', 'intro', 'introformat', 'allowreactions', 'allowtags', 'timecreated', 'timemodified',
+            'name', 'intro', 'introformat', 'allowreactions', 'allowtags', 'studentposting', 'subscriptionmode',
+            'notifications', 'completiondiscussions', 'completionreplies', 'completionposts', 'completionaccepted',
+            'timecreated', 'timemodified',
         ]);
 
         $discussions = new backup_nested_element('discussions');
         $discussion = new backup_nested_element('discussion', ['id'], [
-            'userid', 'name', 'firstpost', 'pinned', 'resolved', 'posttype', 'usermodified', 'timecreated', 'timemodified',
+            'userid', 'name', 'firstpost', 'pinned', 'resolved', 'posttype', 'usermodified', 'groupid', 'timecreated', 'timemodified',
         ]);
 
         $tags = new backup_nested_element('tags');
@@ -58,7 +60,16 @@ class backup_hiveforum_activity_structure_step extends backup_activity_structure
         $read = new backup_nested_element('read', ['id'], ['userid', 'timeread']);
 
         $subscriptions = new backup_nested_element('subscriptions');
-        $subscription = new backup_nested_element('subscription', ['id'], ['userid', 'timecreated']);
+        $subscription = new backup_nested_element('subscription', ['id'], ['userid', 'state', 'timecreated']);
+
+        $mentions = new backup_nested_element('mentions');
+        $mention = new backup_nested_element('mention', ['id'], ['userid', 'timecreated']);
+
+        $forumsubs = new backup_nested_element('forumsubs');
+        $forumsub = new backup_nested_element('forumsub', ['id'], ['userid', 'state', 'timecreated']);
+
+        $digests = new backup_nested_element('digests');
+        $digest = new backup_nested_element('digest', ['id'], ['userid', 'digest']);
 
         $streaks = new backup_nested_element('streaks');
         $streak = new backup_nested_element('streak', ['id'], ['userid', 'currentstreak', 'beststreak', 'lastactiveweek']);
@@ -78,6 +89,12 @@ class backup_hiveforum_activity_structure_step extends backup_activity_structure
         $subscriptions->add_child($subscription);
         $hiveforum->add_child($streaks);
         $streaks->add_child($streak);
+        $post->add_child($mentions);
+        $mentions->add_child($mention);
+        $hiveforum->add_child($forumsubs);
+        $forumsubs->add_child($forumsub);
+        $hiveforum->add_child($digests);
+        $digests->add_child($digest);
 
         // Sources.
         $hiveforum->set_source_table('hiveforum', ['id' => backup::VAR_ACTIVITYID]);
@@ -91,11 +108,18 @@ class backup_hiveforum_activity_structure_step extends backup_activity_structure
             $read->set_source_table('hiveforum_reads', ['discussion' => backup::VAR_PARENTID]);
             $subscription->set_source_table('hiveforum_subscriptions', ['discussion' => backup::VAR_PARENTID]);
             $streak->set_source_table('hiveforum_streaks', ['hiveforum' => backup::VAR_PARENTID]);
+            $mention->set_source_table('hiveforum_mentions', ['postid' => backup::VAR_PARENTID]);
+            $forumsub->set_source_table('hiveforum_forum_subs', ['hiveforum' => backup::VAR_PARENTID]);
+            $digest->set_source_table('hiveforum_digests', ['hiveforum' => backup::VAR_PARENTID]);
         }
 
         // Ids annotations.
         $discussion->annotate_ids('user', 'userid');
         $discussion->annotate_ids('user', 'usermodified');
+        $discussion->annotate_ids('group', 'groupid');
+        $mention->annotate_ids('user', 'userid');
+        $forumsub->annotate_ids('user', 'userid');
+        $digest->annotate_ids('user', 'userid');
         $post->annotate_ids('user', 'userid');
         $reaction->annotate_ids('user', 'userid');
         $read->annotate_ids('user', 'userid');

@@ -21,8 +21,8 @@
  */
 
 export type ReactionType = 'like' | 'love' | 'idea';
-export type Filter = 'all' | 'unread' | 'following' | 'questions' | 'mine';
-export type Sort = 'recent' | 'newest' | 'popular';
+export type Filter = 'all' | 'unread' | 'following' | 'questions' | 'unanswered' | 'mine';
+export type Sort = 'recent' | 'newest' | 'popular' | 'reactions' | 'likes' | 'replies';
 export type Strings = Record<string, string>;
 
 export interface User {
@@ -56,6 +56,7 @@ export interface DiscussionSummary {
     replycount: number;
     reactions: Reaction[];
     tags: string[];
+    groupname: string;
     timecreated: number;
     timemodified: number;
     url: string;
@@ -77,6 +78,9 @@ export interface Discussion {
     canpin: boolean;
     canresolve: boolean;
     canfollow: boolean;
+    followforced: boolean;
+    groupname: string;
+    canreply: boolean;
     canrename: boolean;
 }
 
@@ -99,8 +103,19 @@ export interface Post {
     editurl: string;
 }
 
+export interface GroupTarget {
+    id: number;
+    name: string;
+}
+
 export interface Capabilities {
     canstart: boolean;
+    posttypes: Array<'discussion' | 'question'>;
+    /** Groups in which a discussion can be started (empty when the forum has no groups). */
+    posttargets: GroupTarget[];
+    groupmode: number;
+    canviewreports: boolean;
+    canmanagesubscriptions: boolean;
     canreply: boolean;
     canreact: boolean;
     canmoderate: boolean;
@@ -115,6 +130,7 @@ export interface Counts {
     unread: number;
     following: number;
     questions: number;
+    unanswered: number;
     mine: number;
 }
 
@@ -129,6 +145,15 @@ export interface PopularTag {
     count: number;
 }
 
+export interface Preferences {
+    /** 0 optional, 1 forced, 2 auto, 3 disabled. */
+    subscriptionmode: number;
+    forumsubscribed: boolean;
+    canchange: boolean;
+    digest: boolean;
+    notificationsenabled: boolean;
+}
+
 /** Props of the list page, built by \mod_hiveforum\output\forum_page. */
 export interface ForumProps {
     cmid: number;
@@ -137,6 +162,7 @@ export interface ForumProps {
     search: string;
     tag: string;
     sort: Sort;
+    groupid: number;
     discussions: DiscussionSummary[];
     total: number;
     perpage: number;
@@ -145,7 +171,10 @@ export interface ForumProps {
     populartags: PopularTag[];
     capabilities: Capabilities;
     currentuser: User | null;
+    preferences: Preferences | null;
     fulleditorurl: string;
+    reporturl: string;
+    subscribersurl: string;
     strings: Strings;
 }
 

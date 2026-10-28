@@ -159,6 +159,7 @@ final class exporter {
         }
         $this->preload_users($userids);
 
+        $groups = $this->forum->get_groupmode() !== NOGROUPS ? $this->forum->get_all_groups() : [];
         $result = [];
         foreach ($discussions as $d) {
             $id = (int) $d->id;
@@ -182,6 +183,7 @@ final class exporter {
                 'replycount' => $replycount,
                 'reactions' => self::reaction_list($reactions[$id]),
                 'tags' => $tags[$id],
+                'groupname' => $groups[(int) ($d->groupid ?? 0)] ?? '',
                 'timecreated' => (int) $d->timecreated,
                 'timemodified' => (int) $d->timemodified,
                 'url' => (new url('/mod/hiveforum/discuss.php', ['d' => $id]))->out(false),
@@ -199,6 +201,7 @@ final class exporter {
      * @return string
      */
     public static function excerpt(string $message, int $format, int $length = 220): string {
+        $message = mentions::to_text($message);
         $html = format_text($message, $format, ['context' => \context_system::instance(), 'filter' => false, 'para' => false]);
         // Keep a space where block elements end, so words do not stick together.
         $text = preg_replace('/<[^>]+>/', ' ', $html);
@@ -231,6 +234,9 @@ final class exporter {
     public function discussion(stdClass $discussion, int $userid): array {
         $forum = $this->forum;
         $tags = api::get_tags([(int) $discussion->id])[(int) $discussion->id];
+        $groupid = (int) ($discussion->groupid ?? 0);
+        $groupname = $groupid && $forum->get_groupmode() !== NOGROUPS ? ($forum->get_all_groups()[$groupid] ?? '') : '';
+        $mode = subscriptions::get_mode($forum);
         return [
             'id' => (int) $discussion->id,
             'name' => $this->format_name($discussion->name),
@@ -239,14 +245,17 @@ final class exporter {
             'isquestion' => $discussion->posttype === 'question',
             'pinned' => !empty($discussion->pinned),
             'resolved' => !empty($discussion->resolved),
-            'following' => api::is_following((int) $discussion->id, $userid),
+            'following' => subscriptions::is_following($forum, (int) $discussion->id, $userid),
             'tags' => $tags,
             'firstpostid' => (int) $discussion->firstpost,
             'timecreated' => (int) $discussion->timecreated,
             'timemodified' => (int) $discussion->timemodified,
             'canpin' => $forum->can_pin(),
             'canresolve' => $forum->can_resolve($discussion),
-            'canfollow' => $forum->can_follow(),
+            'canfollow' => $forum->can_follow() && subscriptions::can_change_discussion_subscription($forum),
+            'followforced' => $mode === subscriptions::FORCED,
+            'groupname' => $groupname,
+            'canreply' => $forum->can_reply_to($discussion),
             'canrename' => $forum->can_edit_post((object) ['userid' => $discussion->userid]),
         ];
     }
@@ -286,6 +295,7 @@ final class exporter {
             // Content wiped by a privacy request.
             $message = \html_writer::tag('p', get_string('deletedcontent', 'hiveforum'), ['class' => 'hf-wiped']);
         } else {
+            $message = mentions::render($message, (int) $post->messageformat, (int) $forum->course->id);
             $message = format_text($message, (int) $post->messageformat, ['context' => $context]);
         }
 
@@ -339,8 +349,15 @@ final class exporter {
      */
     public function capabilities(): array {
         $forum = $this->forum;
+        $targets = [];
+        foreach ($forum->get_post_targets() as $id => $name) {
+            $targets[] = ['id' => (int) $id, 'name' => (string) $name];
+        }
         return [
             'canstart' => $forum->can_start_discussion(),
+            'posttypes' => $forum->get_allowed_post_types(),
+            'posttargets' => $forum->get_groupmode() === NOGROUPS ? [] : $targets,
+            'groupmode' => $forum->get_groupmode(),
             'canreply' => $forum->can_reply(),
             'canreact' => $forum->can_react(),
             'canmoderate' => $forum->can_moderate(),
@@ -348,6 +365,26 @@ final class exporter {
             'canfollow' => $forum->can_follow(),
             'allowtags' => !empty($forum->instance->allowtags),
             'allowreactions' => !empty($forum->instance->allowreactions),
+            'canviewreports' => has_capability('mod/hiveforum:viewreports', $forum->context),
+            'canmanagesubscriptions' => has_capability('mod/hiveforum:managesubscriptions', $forum->context),
+        ];
+    }
+
+    /**
+     * Notification preferences of the current user.
+     *
+     * @param int $userid
+     * @return array
+     */
+    public function preferences(int $userid): array {
+        $forum = $this->forum;
+        $mode = subscriptions::get_mode($forum);
+        return [
+            'subscriptionmode' => $mode,
+            'forumsubscribed' => subscriptions::is_forum_subscribed($forum, $userid),
+            'canchange' => subscriptions::is_forum_subscription_optional($forum) && $forum->can_follow(),
+            'digest' => subscriptions::get_digest($forum, $userid),
+            'notificationsenabled' => subscriptions::notifications_enabled($forum),
         ];
     }
 }

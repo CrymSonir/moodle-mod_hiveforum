@@ -54,13 +54,18 @@ class post_form extends \moodleform {
             $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         }
 
-        if ($mode === 'new') {
+        if ($mode === 'new' && count($this->_customdata['posttypes'] ?? []) > 1) {
             $mform->addElement(
                 'advcheckbox',
                 'isquestion',
                 get_string('askquestion', 'hiveforum'),
                 get_string('askquestion_desc', 'hiveforum')
             );
+        }
+
+        if ($mode === 'new' && !empty($this->_customdata['groups'])) {
+            $mform->addElement('select', 'groupid', get_string('group'), $this->_customdata['groups']);
+            $mform->setType('groupid', PARAM_INT);
         }
 
         $mform->addElement(

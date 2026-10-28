@@ -59,6 +59,7 @@ export default function DiscussionCard({discussion: d, activeTag, onTag}: Discus
                     {d.isquestion && d.resolved && (
                         <span className="hf-badge hf-badge--resolved"><Icon name="check" size={12} />{t('resolved')}</span>
                     )}
+                    {d.groupname && <span className="hf-badge hf-badge--group"><Icon name="users2" size={12} />{d.groupname}</span>}
                     {d.following && <span className="hf-badge hf-badge--ghost"><Icon name="bellcheck" size={12} />{t('followed')}</span>}
                 </div>
                 <h3 className="hf-card__title" id={`hf-d-${d.id}`}>

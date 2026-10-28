@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_hiveforum';
-$plugin->version   = 2026102300;
+$plugin->version   = 2026102800;
 $plugin->requires  = 2026100500; // Moodle 5.3 (React/ESM front-end).
 $plugin->supported = [503, 503];
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.2.0';
+$plugin->release   = '0.3.0';

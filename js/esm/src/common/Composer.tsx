@@ -24,6 +24,7 @@
 import {useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode} from 'react';
 import Icon, {type IconName} from '@moodle/lms/mod_hiveforum/common/Icon';
 import {useStrings} from '@moodle/lms/mod_hiveforum/common/i18n';
+import {useMentions, type MentionSource} from '@moodle/lms/mod_hiveforum/common/Mentions';
 import UserAvatar from '@moodle/lms/mod_hiveforum/common/UserAvatar';
 import type {User} from '@moodle/lms/mod_hiveforum/common/types';
 
@@ -73,11 +74,13 @@ interface ComposerProps {
     extra?: ReactNode;
     /** Accessible label of the textarea. */
     label: string;
+    /** Enables @mentions (people who can see this discussion). */
+    mentions?: MentionSource;
 }
 
 export default function Composer({
     draftKey, initialValue = '', placeholder, submitLabel, onSubmit, onCancel, autoFocus = false, user,
-    compact = false, extra, label,
+    compact = false, extra, label, mentions,
 }: ComposerProps) {
     const t = useStrings();
     const id = useId();
@@ -85,6 +88,7 @@ export default function Composer({
     const [value, setValue] = useState(() => initialValue || (draftKey ? drafts.get(draftKey) : ''));
     const [busy, setBusy] = useState(false);
     const [focused, setFocused] = useState(autoFocus);
+    const mention = useMentions({source: mentions, textareaRef, value, setValue});
 
     const formats: Format[] = [
         {icon: 'bold', label: t('format_bold'), before: '**', after: '**', placeholder: t('format_bold')},
@@ -168,6 +172,9 @@ export default function Composer({
     }, [value, busy, onSubmit, draftKey]);
 
     const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+        if (mention.onKeyDown(e)) {
+            return;
+        }
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             submit();
@@ -187,6 +194,7 @@ export default function Composer({
             {user && <div className="hf-composer__avatar"><UserAvatar user={user} size="md" decorative /></div>}
             <div className="hf-composer__box">
                 <label htmlFor={id} className="visually-hidden">{label}</label>
+                {mention.list}
                 <textarea
                     id={id}
                     ref={textareaRef}
@@ -196,8 +204,13 @@ export default function Composer({
                     rows={compact && !expanded ? 1 : 3}
                     onChange={(e) => setValue(e.target.value)}
                     onKeyDown={onKeyDown}
+                    onSelect={mention.detect}
                     onFocus={() => setFocused(true)}
                     onBlur={() => setFocused(false)}
+                    aria-autocomplete={mention.enabled ? 'list' : undefined}
+                    aria-controls={mention.open ? mention.listId : undefined}
+                    aria-expanded={mention.enabled ? mention.open : undefined}
+                    aria-activedescendant={mention.activeId}
                     disabled={busy}
                 />
                 {expanded && (
@@ -216,6 +229,18 @@ export default function Composer({
                                     <Icon name={format.icon} size={15} />
                                 </button>
                             ))}
+                            {mention.enabled && (
+                                <button
+                                    type="button"
+                                    className="hf-iconbtn hf-iconbtn--sm"
+                                    title={t('mentionsomeone')}
+                                    aria-label={t('mentionsomeone')}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={mention.startMention}
+                                >
+                                    <Icon name="at" size={15} />
+                                </button>
+                            )}
                             <span className="hf-composer__hint">{t('markdownhint')}</span>
                         </div>
                         <div className="hf-composer__actions">

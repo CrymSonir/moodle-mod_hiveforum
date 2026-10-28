@@ -49,6 +49,7 @@ class create_discussion extends external_api {
                 VALUE_DEFAULT,
                 []
             ),
+            'groupid' => new external_value(PARAM_INT, 'Target group (0 = all participants, -1 = active group)', VALUE_DEFAULT, -1),
         ]);
     }
 
@@ -60,15 +61,24 @@ class create_discussion extends external_api {
      * @param string $message
      * @param bool $isquestion
      * @param array $tags
+     * @param int $groupid
      * @return array
      */
-    public static function execute(int $cmid, string $name, string $message, bool $isquestion = false, array $tags = []): array {
+    public static function execute(int $cmid, string $name, string $message, bool $isquestion = false, array $tags = [], int $groupid = -1): array {
         global $USER;
 
-        $params = self::validate_parameters(self::execute_parameters(), compact('cmid', 'name', 'message', 'isquestion', 'tags'));
+        $params = self::validate_parameters(self::execute_parameters(), compact('cmid', 'name', 'message', 'isquestion', 'tags', 'groupid'));
         $forum = forum::from_cmid($params['cmid']);
         self::validate_context($forum->context);
         $forum->require($forum->can_start_discussion(), 'newdiscussion');
+
+        $groupid = $params['groupid'];
+        if ($groupid < 0) {
+            // Default: the active group if the user can post in it, otherwise their first allowed group.
+            $targets = $forum->get_post_targets();
+            $active = $forum->resolve_active_group();
+            $groupid = array_key_exists($active, $targets) ? $active : (int) array_key_first($targets);
+        }
 
         $discussion = api::create_discussion(
             $forum,
@@ -77,7 +87,10 @@ class create_discussion extends external_api {
             $params['message'],
             FORMAT_MARKDOWN,
             $params['isquestion'],
-            $params['tags']
+            $params['tags'],
+            null,
+            [],
+            $groupid
         );
 
         return [

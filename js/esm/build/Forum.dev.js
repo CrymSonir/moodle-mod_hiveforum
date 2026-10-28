@@ -20,15 +20,17 @@ import { getDiscussions, markAllRead } from "@moodle/lms/mod_hiveforum/common/re
 import { StreakChip } from "@moodle/lms/mod_hiveforum/common/UserAvatar";
 import DiscussionCard, { DiscussionCardSkeleton } from "@moodle/lms/mod_hiveforum/forum/DiscussionCard";
 import NewDiscussion from "@moodle/lms/mod_hiveforum/forum/NewDiscussion";
+import NotificationMenu from "@moodle/lms/mod_hiveforum/forum/NotificationMenu";
 const SEARCH_DEBOUNCE_MS = 350;
 const FILTERS = [
   { id: "all", label: "filter_all" },
   { id: "unread", label: "filter_unread", count: "unread" },
   { id: "following", label: "filter_following", count: "following" },
   { id: "questions", label: "filter_questions", count: "questions" },
+  { id: "unanswered", label: "filter_unanswered", count: "unanswered" },
   { id: "mine", label: "filter_mine" }
 ];
-const SORTS = ["recent", "newest", "popular"];
+const SORTS = ["recent", "newest", "popular", "reactions", "likes", "replies"];
 const syncUrl = /* @__PURE__ */ __name((cmid, filter, search, tag, sort) => {
   const params = new URLSearchParams({ id: String(cmid) });
   if (filter !== "all") {
@@ -74,7 +76,7 @@ function ForumView(props) {
     syncUrl(cmid, filter, search, tag, sort);
     const current = ++requestId.current;
     setLoading(true);
-    getDiscussions({ cmid, filter, search, tag, sort, page: 0 }).then((result) => {
+    getDiscussions({ cmid, filter, search, tag, sort, page: 0, groupid: props.groupid }).then((result) => {
       if (current !== requestId.current) {
         return;
       }
@@ -83,11 +85,11 @@ function ForumView(props) {
       setCounts(result.counts);
       setPage(0);
     }).catch(exception).finally(() => current === requestId.current && setLoading(false));
-  }, [cmid, filter, search, tag, sort]);
+  }, [cmid, filter, search, tag, sort, props.groupid]);
   const loadMore = useCallback(() => {
     const next = page + 1;
     setLoadingMore(true);
-    getDiscussions({ cmid, filter, search, tag, sort, page: next }).then((result) => {
+    getDiscussions({ cmid, filter, search, tag, sort, page: next, groupid: props.groupid }).then((result) => {
       setDiscussions((prev) => {
         const known = new Set(prev.map((d) => d.id));
         return [...prev, ...result.discussions.filter((d) => !known.has(d.id))];
@@ -95,7 +97,7 @@ function ForumView(props) {
       setTotal(result.total);
       setPage(next);
     }).catch(exception).finally(() => setLoadingMore(false));
-  }, [cmid, filter, search, tag, sort, page]);
+  }, [cmid, filter, search, tag, sort, page, props.groupid]);
   const onMarkAllRead = /* @__PURE__ */ __name(() => {
     markAllRead(cmid).then(() => {
       setDiscussions((prev) => prev.map((d) => ({ ...d, unread: false })));
@@ -116,89 +118,125 @@ function ForumView(props) {
         /* @__PURE__ */ jsxDEV("span", { className: "hf-stat", children: [
           /* @__PURE__ */ jsxDEV(Icon, { name: "layers", size: 16 }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 156,
+            lineNumber: 158,
             columnNumber: 47
           }, this),
           /* @__PURE__ */ jsxDEV("strong", { children: stats.discussions }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 157,
+            lineNumber: 159,
             columnNumber: 25
           }, this),
           " ",
           t.plural(stats.discussions, "stat_discussion", "stat_discussions")
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 156,
+          lineNumber: 158,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV("span", { className: "hf-stat", children: [
           /* @__PURE__ */ jsxDEV(Icon, { name: "chat", size: 16 }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 159,
+            lineNumber: 161,
             columnNumber: 47
           }, this),
           /* @__PURE__ */ jsxDEV("strong", { children: stats.posts }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 160,
+            lineNumber: 162,
             columnNumber: 25
           }, this),
           " ",
           t.plural(stats.posts, "stat_message", "stat_messages")
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 159,
+          lineNumber: 161,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV("span", { className: "hf-stat", children: [
           /* @__PURE__ */ jsxDEV(Icon, { name: "users", size: 16 }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 162,
+            lineNumber: 164,
             columnNumber: 47
           }, this),
           /* @__PURE__ */ jsxDEV("strong", { children: stats.participants }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 163,
+            lineNumber: 165,
             columnNumber: 25
           }, this),
           " ",
           t.plural(stats.participants, "stat_participant", "stat_participants")
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 162,
+          lineNumber: 164,
           columnNumber: 21
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 155,
+        lineNumber: 157,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "hf-hero__actions", children: [
         currentuser && /* @__PURE__ */ jsxDEV(StreakChip, { weeks: currentuser.streak, large: true }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 167,
+          lineNumber: 169,
           columnNumber: 37
+        }, this),
+        caps.canviewreports && /* @__PURE__ */ jsxDEV("a", { className: "hf-iconbtn", href: props.reporturl, title: t("engagementreport"), "aria-label": t("engagementreport"), children: /* @__PURE__ */ jsxDEV(Icon, { name: "report" }, void 0, false, {
+          fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
+          lineNumber: 172,
+          columnNumber: 29
+        }, this) }, void 0, false, {
+          fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
+          lineNumber: 171,
+          columnNumber: 25
+        }, this),
+        caps.canmanagesubscriptions && /* @__PURE__ */ jsxDEV(
+          "a",
+          {
+            className: "hf-iconbtn",
+            href: props.subscribersurl,
+            title: t("managesubscriptions"),
+            "aria-label": t("managesubscriptions"),
+            children: /* @__PURE__ */ jsxDEV(Icon, { name: "users2" }, void 0, false, {
+              fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
+              lineNumber: 178,
+              columnNumber: 29
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
+            lineNumber: 176,
+            columnNumber: 25
+          },
+          this
+        ),
+        props.preferences && /* @__PURE__ */ jsxDEV(NotificationMenu, { cmid, preferences: props.preferences }, void 0, false, {
+          fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
+          lineNumber: 181,
+          columnNumber: 43
         }, this),
         caps.canstart && !composing && /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-primary hf-btn-new", onClick: () => setComposing(true), children: [
           /* @__PURE__ */ jsxDEV(Icon, { name: "plus", size: 18 }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 170,
+            lineNumber: 184,
             columnNumber: 29
           }, this),
           " ",
           t("newdiscussion")
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 169,
+          lineNumber: 183,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 166,
+        lineNumber: 168,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-      lineNumber: 154,
+      lineNumber: 156,
       columnNumber: 13
     }, this),
     composing && /* @__PURE__ */ jsxDEV(
@@ -209,13 +247,16 @@ function ForumView(props) {
         suggestions: tagSuggestions,
         fulleditorurl: props.fulleditorurl,
         user: currentuser,
+        posttypes: caps.posttypes,
+        targets: caps.posttargets,
+        activegroup: props.groupid,
         onClose: () => setComposing(false)
       },
       void 0,
       false,
       {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 177,
+        lineNumber: 191,
         columnNumber: 17
       },
       this
@@ -234,7 +275,7 @@ function ForumView(props) {
               t(f.label),
               count > 0 && /* @__PURE__ */ jsxDEV("span", { className: `hf-tab__count ${f.id === "unread" ? "is-accent" : ""}`, children: count }, void 0, false, {
                 fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-                lineNumber: 200,
+                lineNumber: 217,
                 columnNumber: 47
               }, this)
             ]
@@ -243,26 +284,26 @@ function ForumView(props) {
           true,
           {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 192,
+            lineNumber: 209,
             columnNumber: 29
           },
           this
         );
       }) }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 188,
+        lineNumber: 205,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "hf-toolbar__right", children: [
         /* @__PURE__ */ jsxDEV("div", { className: "hf-search", role: "search", children: [
           /* @__PURE__ */ jsxDEV(Icon, { name: "search", size: 16, className: "hf-search__icon" }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 207,
+            lineNumber: 224,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDEV("label", { htmlFor: "hf-search-input", className: "visually-hidden", children: t("searchdiscussions") }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 208,
+            lineNumber: 225,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDEV(
@@ -279,7 +320,7 @@ function ForumView(props) {
             false,
             {
               fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-              lineNumber: 209,
+              lineNumber: 226,
               columnNumber: 25
             },
             this
@@ -293,7 +334,7 @@ function ForumView(props) {
               "aria-label": t("clearsearch"),
               children: /* @__PURE__ */ jsxDEV(Icon, { name: "x", size: 14 }, void 0, false, {
                 fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-                lineNumber: 220,
+                lineNumber: 237,
                 columnNumber: 33
               }, this)
             },
@@ -301,55 +342,55 @@ function ForumView(props) {
             false,
             {
               fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-              lineNumber: 218,
+              lineNumber: 235,
               columnNumber: 29
             },
             this
           )
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 206,
+          lineNumber: 223,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV("label", { className: "hf-sort", children: [
           /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: t("sortby") }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 225,
+            lineNumber: 242,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDEV(Icon, { name: "sort", size: 16 }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 226,
+            lineNumber: 243,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDEV("select", { value: sort, onChange: (e) => setSort(e.target.value), children: SORTS.map((s) => /* @__PURE__ */ jsxDEV("option", { value: s, children: t(`sort_${s}`) }, s, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 228,
+            lineNumber: 245,
             columnNumber: 47
           }, this)) }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 227,
+            lineNumber: 244,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 224,
+          lineNumber: 241,
           columnNumber: 21
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 205,
+        lineNumber: 222,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-      lineNumber: 187,
+      lineNumber: 204,
       columnNumber: 13
     }, this),
     (props.populartags.length > 0 || tag) && /* @__PURE__ */ jsxDEV("div", { className: "hf-tagbar", "aria-label": t("populartags"), children: [
       /* @__PURE__ */ jsxDEV(Icon, { name: "tag", size: 15, className: "hf-tagbar__icon" }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 236,
+        lineNumber: 253,
         columnNumber: 21
       }, this),
       tag && !tagSuggestions.includes(tag) && /* @__PURE__ */ jsxDEV("button", { type: "button", className: "hf-tag is-active", "aria-pressed": "true", onClick: () => setTag(""), children: [
@@ -358,12 +399,12 @@ function ForumView(props) {
         " ",
         /* @__PURE__ */ jsxDEV(Icon, { name: "x", size: 12 }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 239,
+          lineNumber: 256,
           columnNumber: 36
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 238,
+        lineNumber: 255,
         columnNumber: 25
       }, this),
       props.populartags.map((p) => /* @__PURE__ */ jsxDEV(
@@ -379,12 +420,12 @@ function ForumView(props) {
             " ",
             /* @__PURE__ */ jsxDEV("span", { className: "hf-tag__count", children: p.count }, void 0, false, {
               fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-              lineNumber: 250,
+              lineNumber: 267,
               columnNumber: 39
             }, this),
             tag === p.name && /* @__PURE__ */ jsxDEV(Icon, { name: "x", size: 12 }, void 0, false, {
               fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-              lineNumber: 251,
+              lineNumber: 268,
               columnNumber: 48
             }, this)
           ]
@@ -393,85 +434,85 @@ function ForumView(props) {
         true,
         {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 243,
+          lineNumber: 260,
           columnNumber: 25
         },
         this
       ))
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-      lineNumber: 235,
+      lineNumber: 252,
       columnNumber: 17
     }, this),
     /* @__PURE__ */ jsxDEV("div", { className: "hf-listhead", "aria-live": "polite", children: [
       /* @__PURE__ */ jsxDEV("span", { children: hasQuery ? t.plural(total, "resultsone", "resultsmany", "resultsnone") : t.plural(total, "stat_discussion_n", "stat_discussions_n") }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 258,
+        lineNumber: 275,
         columnNumber: 17
       }, this),
       counts.unread > 0 && currentuser && /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-link btn-sm hf-markread", onClick: onMarkAllRead, children: [
         /* @__PURE__ */ jsxDEV(Icon, { name: "checkcircle", size: 14 }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 263,
+          lineNumber: 280,
           columnNumber: 25
         }, this),
         " ",
         t("markallread")
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 262,
+        lineNumber: 279,
         columnNumber: 21
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-      lineNumber: 257,
+      lineNumber: 274,
       columnNumber: 13
     }, this),
     /* @__PURE__ */ jsxDEV("div", { className: `hf-list ${loading ? "is-loading" : ""}`, "aria-busy": loading, children: [
       loading && discussions.length === 0 && [0, 1, 2].map((i) => /* @__PURE__ */ jsxDEV(DiscussionCardSkeleton, {}, i, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 269,
+        lineNumber: 286,
         columnNumber: 78
       }, this)),
       discussions.map((d) => /* @__PURE__ */ jsxDEV(DiscussionCard, { discussion: d, activeTag: tag, onTag: setTag }, d.id, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 271,
+        lineNumber: 288,
         columnNumber: 21
       }, this)),
       !loading && discussions.length === 0 && /* @__PURE__ */ jsxDEV("div", { className: "hf-empty", children: [
         /* @__PURE__ */ jsxDEV("div", { className: "hf-empty__art", "aria-hidden": "true", children: /* @__PURE__ */ jsxDEV("svg", { viewBox: "0 0 120 104", width: "120", height: "104", children: [
           /* @__PURE__ */ jsxDEV("path", { className: "hf-hex hf-hex--a", d: "M30 4l26 15v30L30 64 4 49V19z" }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 277,
+            lineNumber: 294,
             columnNumber: 33
           }, this),
           /* @__PURE__ */ jsxDEV("path", { className: "hf-hex hf-hex--b", d: "M90 4l26 15v30L90 64 64 49V19z" }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 278,
+            lineNumber: 295,
             columnNumber: 33
           }, this),
           /* @__PURE__ */ jsxDEV("path", { className: "hf-hex hf-hex--c", d: "M60 40l26 15v30L60 100 34 85V55z" }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 279,
+            lineNumber: 296,
             columnNumber: 33
           }, this)
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 276,
+          lineNumber: 293,
           columnNumber: 29
         }, this) }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 275,
+          lineNumber: 292,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV("h3", { className: "hf-empty__title", children: hasQuery ? t("emptyresults") : t("emptydiscussions") }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 282,
+          lineNumber: 299,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV("p", { className: "hf-empty__text", children: hasQuery ? t("emptyresults_help") : t("emptydiscussions_help") }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 283,
+          lineNumber: 300,
           columnNumber: 25
         }, this),
         hasQuery ? /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-outline-secondary", onClick: () => {
@@ -480,50 +521,50 @@ function ForumView(props) {
           setTag("");
         }, children: t("resetfilters") }, void 0, false, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 285,
+          lineNumber: 302,
           columnNumber: 29
         }, this) : caps.canstart && !composing && /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-primary", onClick: () => setComposing(true), children: [
           /* @__PURE__ */ jsxDEV(Icon, { name: "plus", size: 16 }, void 0, false, {
             fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-            lineNumber: 292,
+            lineNumber: 309,
             columnNumber: 33
           }, this),
           " ",
           t("startfirst")
         ] }, void 0, true, {
           fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-          lineNumber: 291,
+          lineNumber: 308,
           columnNumber: 29
         }, this)
       ] }, void 0, true, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 274,
+        lineNumber: 291,
         columnNumber: 21
       }, this)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-      lineNumber: 268,
+      lineNumber: 285,
       columnNumber: 13
     }, this),
     remaining > 0 && /* @__PURE__ */ jsxDEV("div", { className: "hf-more", children: /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-outline-secondary", onClick: loadMore, disabled: loadingMore, children: [
       loadingMore && /* @__PURE__ */ jsxDEV("span", { className: "spinner-border spinner-border-sm me-2", "aria-hidden": "true" }, void 0, false, {
         fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-        lineNumber: 302,
+        lineNumber: 319,
         columnNumber: 41
       }, this),
       t("loadmore", remaining)
     ] }, void 0, true, {
       fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-      lineNumber: 301,
+      lineNumber: 318,
       columnNumber: 21
     }, this) }, void 0, false, {
       fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-      lineNumber: 300,
+      lineNumber: 317,
       columnNumber: 17
     }, this)
   ] }, void 0, true, {
     fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-    lineNumber: 153,
+    lineNumber: 155,
     columnNumber: 9
   }, this);
 }
@@ -531,11 +572,11 @@ __name(ForumView, "ForumView");
 function Forum(props) {
   return /* @__PURE__ */ jsxDEV(StringsProvider, { strings: props.strings, children: /* @__PURE__ */ jsxDEV(ForumView, { ...props }, void 0, false, {
     fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-    lineNumber: 314,
+    lineNumber: 331,
     columnNumber: 13
   }, this) }, void 0, false, {
     fileName: "../plugin/hiveforum/js/esm/src/Forum.tsx",
-    lineNumber: 313,
+    lineNumber: 330,
     columnNumber: 9
   }, this);
 }

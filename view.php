@@ -57,8 +57,18 @@ $event->trigger();
 $completion = new completion_info($forum->course);
 $completion->set_module_viewed($forum->cm);
 
+// Group menu (standard Moodle selector); it also sets the active group of the session.
+$groupmenu = '';
+if ($forum->get_groupmode() !== NOGROUPS) {
+    $groupmenu = groups_print_activity_menu($forum->cm, $PAGE->url, true);
+}
+$activegroup = $forum->resolve_active_group();
+
 echo $OUTPUT->header();
+if ($groupmenu) {
+    echo html_writer::div($groupmenu, 'hf-groupmenu mb-3');
+}
 echo $PAGE->get_renderer('mod_hiveforum')->render(
-    new \mod_hiveforum\output\forum_page($forum, $filter, $search, $tag, $sort)
+    new \mod_hiveforum\output\forum_page($forum, $filter, $search, $tag, $sort, $activegroup)
 );
 echo $OUTPUT->footer();

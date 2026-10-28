@@ -33,6 +33,7 @@ import {getDiscussions, markAllRead} from '@moodle/lms/mod_hiveforum/common/repo
 import {StreakChip} from '@moodle/lms/mod_hiveforum/common/UserAvatar';
 import DiscussionCard, {DiscussionCardSkeleton} from '@moodle/lms/mod_hiveforum/forum/DiscussionCard';
 import NewDiscussion from '@moodle/lms/mod_hiveforum/forum/NewDiscussion';
+import NotificationMenu from '@moodle/lms/mod_hiveforum/forum/NotificationMenu';
 import type {Counts, DiscussionSummary, Filter, ForumProps, Sort} from '@moodle/lms/mod_hiveforum/common/types';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -42,10 +43,11 @@ const FILTERS: ReadonlyArray<{id: Filter; label: string; count?: keyof Counts}> 
     {id: 'unread', label: 'filter_unread', count: 'unread'},
     {id: 'following', label: 'filter_following', count: 'following'},
     {id: 'questions', label: 'filter_questions', count: 'questions'},
+    {id: 'unanswered', label: 'filter_unanswered', count: 'unanswered'},
     {id: 'mine', label: 'filter_mine'},
 ];
 
-const SORTS: ReadonlyArray<Sort> = ['recent', 'newest', 'popular'];
+const SORTS: ReadonlyArray<Sort> = ['recent', 'newest', 'popular', 'reactions', 'likes', 'replies'];
 
 /**
  * Keep the query string in sync with the current view.
@@ -101,7 +103,7 @@ function ForumView(props: ForumProps) {
         syncUrl(cmid, filter, search, tag, sort);
         const current = ++requestId.current;
         setLoading(true);
-        getDiscussions({cmid, filter, search, tag, sort, page: 0})
+        getDiscussions({cmid, filter, search, tag, sort, page: 0, groupid: props.groupid})
             .then((result) => {
                 if (current !== requestId.current) {
                     return; // A newer request superseded this one.
@@ -113,12 +115,12 @@ function ForumView(props: ForumProps) {
             })
             .catch(exception)
             .finally(() => current === requestId.current && setLoading(false));
-    }, [cmid, filter, search, tag, sort]);
+    }, [cmid, filter, search, tag, sort, props.groupid]);
 
     const loadMore = useCallback(() => {
         const next = page + 1;
         setLoadingMore(true);
-        getDiscussions({cmid, filter, search, tag, sort, page: next})
+        getDiscussions({cmid, filter, search, tag, sort, page: next, groupid: props.groupid})
             .then((result) => {
                 setDiscussions((prev) => {
                     const known = new Set(prev.map((d) => d.id));
@@ -129,7 +131,7 @@ function ForumView(props: ForumProps) {
             })
             .catch(exception)
             .finally(() => setLoadingMore(false));
-    }, [cmid, filter, search, tag, sort, page]);
+    }, [cmid, filter, search, tag, sort, page, props.groupid]);
 
     const onMarkAllRead = () => {
         markAllRead(cmid)
@@ -165,6 +167,18 @@ function ForumView(props: ForumProps) {
                 </div>
                 <div className="hf-hero__actions">
                     {currentuser && <StreakChip weeks={currentuser.streak} large />}
+                    {caps.canviewreports && (
+                        <a className="hf-iconbtn" href={props.reporturl} title={t('engagementreport')} aria-label={t('engagementreport')}>
+                            <Icon name="report" />
+                        </a>
+                    )}
+                    {caps.canmanagesubscriptions && (
+                        <a className="hf-iconbtn" href={props.subscribersurl} title={t('managesubscriptions')}
+                            aria-label={t('managesubscriptions')}>
+                            <Icon name="users2" />
+                        </a>
+                    )}
+                    {props.preferences && <NotificationMenu cmid={cmid} preferences={props.preferences} />}
                     {caps.canstart && !composing && (
                         <button type="button" className="btn btn-primary hf-btn-new" onClick={() => setComposing(true)}>
                             <Icon name="plus" size={18} /> {t('newdiscussion')}
@@ -180,6 +194,9 @@ function ForumView(props: ForumProps) {
                     suggestions={tagSuggestions}
                     fulleditorurl={props.fulleditorurl}
                     user={currentuser}
+                    posttypes={caps.posttypes}
+                    targets={caps.posttargets}
+                    activegroup={props.groupid}
                     onClose={() => setComposing(false)}
                 />
             )}

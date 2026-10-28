@@ -47,6 +47,9 @@ class provider implements
         'hiveforum_reads' => 'userid',
         'hiveforum_subscriptions' => 'userid',
         'hiveforum_streaks' => 'userid',
+        'hiveforum_forum_subs' => 'userid',
+        'hiveforum_digests' => 'userid',
+        'hiveforum_mentions' => 'userid',
     ];
 
     #[\Override]
@@ -75,8 +78,22 @@ class provider implements
         ], 'privacy:metadata:hiveforum_reads');
         $collection->add_database_table('hiveforum_subscriptions', [
             'userid' => 'privacy:metadata:hiveforum_subscriptions:userid',
+            'state' => 'privacy:metadata:hiveforum_subscriptions:state',
             'timecreated' => 'privacy:metadata:hiveforum_subscriptions:timecreated',
         ], 'privacy:metadata:hiveforum_subscriptions');
+        $collection->add_database_table('hiveforum_forum_subs', [
+            'userid' => 'privacy:metadata:hiveforum_forum_subs:userid',
+            'state' => 'privacy:metadata:hiveforum_forum_subs:state',
+            'timecreated' => 'privacy:metadata:hiveforum_forum_subs:timecreated',
+        ], 'privacy:metadata:hiveforum_forum_subs');
+        $collection->add_database_table('hiveforum_digests', [
+            'userid' => 'privacy:metadata:hiveforum_digests:userid',
+            'digest' => 'privacy:metadata:hiveforum_digests:digest',
+        ], 'privacy:metadata:hiveforum_digests');
+        $collection->add_database_table('hiveforum_mentions', [
+            'userid' => 'privacy:metadata:hiveforum_mentions:userid',
+            'timecreated' => 'privacy:metadata:hiveforum_mentions:timecreated',
+        ], 'privacy:metadata:hiveforum_mentions');
         $collection->add_database_table('hiveforum_streaks', [
             'userid' => 'privacy:metadata:hiveforum_streaks:userid',
             'currentstreak' => 'privacy:metadata:hiveforum_streaks:currentstreak',
@@ -97,10 +114,10 @@ class provider implements
     private static function forum_join(string $table): array {
         return match ($table) {
             'hiveforum_discussions' => ['', 't.hiveforum'],
-            'hiveforum_streaks' => ['', 't.hiveforum'],
+            'hiveforum_streaks', 'hiveforum_forum_subs', 'hiveforum_digests' => ['', 't.hiveforum'],
             'hiveforum_posts', 'hiveforum_reads', 'hiveforum_subscriptions' =>
                 ['JOIN {hiveforum_discussions} jd ON jd.id = t.discussion', 'jd.hiveforum'],
-            'hiveforum_reactions' => [
+            'hiveforum_reactions', 'hiveforum_mentions' => [
                 'JOIN {hiveforum_posts} jp ON jp.id = t.postid JOIN {hiveforum_discussions} jd ON jd.id = jp.discussion',
                 'jd.hiveforum',
             ],
@@ -184,7 +201,7 @@ class provider implements
                     'name' => format_string($discussion->name, true, ['context' => $context]),
                     'startedbyyou' => transform::yesno((int) $discussion->userid === $userid),
                     'timecreated' => transform::datetime($discussion->timecreated),
-                    'following' => transform::yesno((bool) $follow),
+                    'following' => $follow ? transform::yesno((bool) $follow->state) : null,
                     'lastread' => $read ? transform::datetime($read->timeread) : null,
                     'reactions' => array_values(array_map(fn($r) => [
                         'post' => $r->postid,
@@ -221,6 +238,28 @@ class provider implements
                     'beststreak' => $streak->beststreak,
                 ]);
             }
+
+            // Notification preferences and mentions.
+            $forumsub = $DB->get_record('hiveforum_forum_subs', ['hiveforum' => $forumid, 'userid' => $userid]);
+            $digest = $DB->record_exists('hiveforum_digests', ['hiveforum' => $forumid, 'userid' => $userid, 'digest' => 1]);
+            $mentions = $DB->get_records_sql(
+                "SELECT m.id, m.postid, m.timecreated
+                   FROM {hiveforum_mentions} m
+                   JOIN {hiveforum_posts} p ON p.id = m.postid
+                   JOIN {hiveforum_discussions} d ON d.id = p.discussion
+                  WHERE d.hiveforum = ? AND m.userid = ?",
+                [$forumid, $userid]
+            );
+            if ($forumsub || $digest || $mentions) {
+                writer::with_context($context)->export_data([get_string('privacy:preferences', 'hiveforum')], (object) [
+                    'forumsubscription' => $forumsub ? transform::yesno((bool) $forumsub->state) : null,
+                    'dailydigest' => transform::yesno($digest),
+                    'mentionedin' => array_values(array_map(fn($m) => [
+                        'post' => $m->postid,
+                        'timecreated' => transform::datetime($m->timecreated),
+                    ], $mentions)),
+                ]);
+            }
         }
     }
 
@@ -238,7 +277,9 @@ class provider implements
         foreach (array_chunk($ids, 500) as $chunk) {
             \mod_hiveforum\local\api::delete_discussion_data($chunk);
         }
-        $DB->delete_records('hiveforum_streaks', ['hiveforum' => $cm->instance]);
+        foreach (['hiveforum_streaks', 'hiveforum_forum_subs', 'hiveforum_digests'] as $table) {
+            $DB->delete_records($table, ['hiveforum' => $cm->instance]);
+        }
         get_file_storage()->delete_area_files($context->id, 'mod_hiveforum', 'post');
     }
 
@@ -284,6 +325,14 @@ class provider implements
         $DB->delete_records_select('hiveforum_reads', "userid $usersql AND $indiscussion", $params);
         $DB->delete_records_select('hiveforum_subscriptions', "userid $usersql AND $indiscussion", $params);
         $DB->delete_records_select('hiveforum_streaks', "userid $usersql AND hiveforum = :forumid", $params);
+        $DB->delete_records_select('hiveforum_forum_subs', "userid $usersql AND hiveforum = :forumid", $params);
+        $DB->delete_records_select('hiveforum_digests', "userid $usersql AND hiveforum = :forumid", $params);
+        $DB->delete_records_select(
+            'hiveforum_mentions',
+            "userid $usersql AND postid IN (SELECT p.id FROM {hiveforum_posts} p
+                JOIN {hiveforum_discussions} d ON d.id = p.discussion WHERE d.hiveforum = :forumid)",
+            $params
+        );
 
         // Wipe the content of posts but keep them so the thread structure stays intact.
         $postids = $DB->get_fieldset_select('hiveforum_posts', 'id', "userid $usersql AND $indiscussion", $params);

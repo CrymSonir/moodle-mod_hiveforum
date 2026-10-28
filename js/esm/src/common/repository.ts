@@ -22,7 +22,7 @@
 
 import {fetchOne} from '@moodle/lms/core/ajax';
 import type {
-    Counts, Discussion, DiscussionSummary, Filter, Post, Reaction, ReactionType, Sort,
+    Counts, Discussion, DiscussionSummary, Filter, Post, Preferences, Reaction, ReactionType, Sort, User,
 } from '@moodle/lms/mod_hiveforum/common/types';
 
 export interface DiscussionListQuery {
@@ -32,6 +32,7 @@ export interface DiscussionListQuery {
     tag: string;
     sort: Sort;
     page: number;
+    groupid: number;
 }
 
 export interface DiscussionListResponse {
@@ -53,6 +54,7 @@ export const createDiscussion = (args: {
     message: string;
     isquestion: boolean;
     tags: string[];
+    groupid: number;
 }): Promise<{discussionid: number; url: string}> =>
     fetchOne({methodname: 'mod_hiveforum_create_discussion', args});
 
@@ -83,3 +85,19 @@ export const toggleAccepted = (postid: number): Promise<{accepted: boolean; reso
 
 export const markAllRead = (cmid: number): Promise<{success: boolean}> =>
     fetchOne({methodname: 'mod_hiveforum_mark_all_read', args: {cmid}});
+
+export const searchUsers = (cmid: number, discussionid: number, query: string): Promise<{users: User[]}> =>
+    fetchOne({methodname: 'mod_hiveforum_search_users', args: {cmid, discussionid, query}});
+
+export const setPreferences = (
+    cmid: number,
+    prefs: {forumsubscribed?: boolean; digest?: boolean},
+): Promise<{preferences: Preferences}> =>
+    fetchOne({
+        methodname: 'mod_hiveforum_set_preferences',
+        args: {
+            cmid,
+            forumsubscribed: prefs.forumsubscribed === undefined ? -1 : Number(prefs.forumsubscribed),
+            digest: prefs.digest === undefined ? -1 : Number(prefs.digest),
+        },
+    });

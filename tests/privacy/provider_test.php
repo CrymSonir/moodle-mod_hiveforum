@@ -22,6 +22,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use mod_hiveforum\local\api;
 use mod_hiveforum\local\forum;
+use mod_hiveforum\local\subscriptions;
 
 /**
  * Privacy provider tests.
@@ -63,11 +64,23 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->setUser($this->bob);
         $reply = api::add_post($this->forum, $this->discussion, 0, (int) $this->bob->id, 'Bob reply', FORMAT_MARKDOWN);
         api::toggle_reaction($this->forum, $reply, (int) $this->alice->id, 'like');
+        // Preferences and a mention of bob.
+        subscriptions::set_forum_subscription($this->forum, (int) $this->bob->id, true);
+        subscriptions::set_digest($this->forum, (int) $this->bob->id, true);
+        $this->setUser($this->alice);
+        api::add_post(
+            $this->forum,
+            $this->discussion,
+            0,
+            (int) $this->alice->id,
+            'Hi @[Bob](user:' . $this->bob->id . ')',
+            FORMAT_MARKDOWN
+        );
     }
 
     public function test_metadata(): void {
         $collection = provider::get_metadata(new \core_privacy\local\metadata\collection('mod_hiveforum'));
-        $this->assertCount(8, $collection->get_collection());
+        $this->assertCount(11, $collection->get_collection());
     }
 
     public function test_contexts_and_users(): void {
@@ -86,6 +99,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertTrue($writer->has_any_data());
         $subcontext = [get_string('discussions', 'hiveforum'), $this->discussion->id . ' - Alice topic'];
         $this->assertNotEmpty($writer->get_data($subcontext));
+        $this->assertNotEmpty($writer->get_data([get_string('privacy:preferences', 'hiveforum')]));
     }
 
     public function test_delete_for_user_wipes_posts_and_keeps_others(): void {
@@ -98,6 +112,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertEquals('', reset($bobposts)->message);
         $this->assertFalse($DB->record_exists('hiveforum_subscriptions', ['userid' => $this->bob->id]));
         $this->assertFalse($DB->record_exists('hiveforum_streaks', ['userid' => $this->bob->id]));
+        $this->assertFalse($DB->record_exists('hiveforum_forum_subs', ['userid' => $this->bob->id]));
+        $this->assertFalse($DB->record_exists('hiveforum_digests', ['userid' => $this->bob->id]));
+        $this->assertFalse($DB->record_exists('hiveforum_mentions', ['userid' => $this->bob->id]));
         // Alice keeps her content and her reaction.
         $this->assertEquals('Alice text', $DB->get_field('hiveforum_posts', 'message', ['id' => $this->discussion->firstpost]));
         $this->assertTrue($DB->record_exists('hiveforum_reactions', ['userid' => $this->alice->id]));

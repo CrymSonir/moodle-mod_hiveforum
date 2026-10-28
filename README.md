@@ -18,13 +18,19 @@ Les fichiers compilés `js/esm/build/` sont livrés : rien à compiler pour l'ut
 
 | | |
 |---|---|
-| **Liste** | filtres (toutes, non lues, suivies, questions ouvertes, les miennes) avec compteurs, recherche instantanée (titres et contenus), tags populaires cliquables, tri (activité, récentes, plus actives), « Afficher plus », « Tout marquer comme lu », URL synchronisée (rechargement, retour, partage de lien) |
+| **Liste** | filtres (toutes, non lues, suivies, questions ouvertes, sans réponse, les miennes) avec compteurs, recherche instantanée (titres et contenus), tags populaires cliquables, tri (activité, récentes, plus actives, plus de réactions, plus de 👍, plus de réponses), « Afficher plus », « Tout marquer comme lu », URL synchronisée (rechargement, retour, partage de lien) |
 | **Nouvelle discussion** | panneau en ligne : type Discussion / Question, titre, tags (chips), éditeur Markdown ; lien vers l'éditeur complet (TinyMCE + fichiers) |
 | **Fil** | message d'ouverture, réponses imbriquées repliables, réponse en ligne sous n'importe quel message, édition en ligne, suppression avec confirmation (et des réponses qui en dépendent), lien permanent `#p123` |
 | **Questions** | « Accepter la réponse » (auteur ou modérateur), une seule réponse acceptée, raccourci vers elle sous la question, « Marquer comme résolue » / « Rouvrir » |
 | **Réactions** | 👍 ❤️ 💡 avec mise à jour optimiste |
 | **Temps réel** | vérification des nouvelles réponses toutes les 30 s quand l'onglet est visible, bandeau « 2 nouvelles réponses » |
-| **Suivi** | l'auteur et les participants suivent automatiquement la discussion ; notifications Moodle (popup, e-mail, app) envoyées par tâche ad hoc |
+| **Groupes** | groupes séparés et visibles : liste, compteurs, recherche, statistiques, fil, web services, notifications et mentions limités à ce que l'utilisateur a le droit de voir ; choix du groupe destinataire à la création ; `moodle/site:accessallgroups` pour « Tous les participants » |
+| **Abonnements** | modes facultatif / automatique / imposé / désactivé (comme mod_forum), abonnement au forum + suivi par discussion, menu « Notifications » (abonnement, une notification par message ou résumé quotidien), page « Abonnements » pour les enseignants (abonner / désabonner en masse) |
+| **Notifications** | messages Moodle (popup, e-mail, app) par tâche ad hoc ; résumé quotidien par tâche planifiée (17 h) ; interrupteur global `mod_hiveforum/enablenotifications` et réglage par activité |
+| **Mentions** | `@` dans l'éditeur → autocomplétion des participants qui peuvent voir la discussion, lien vers le profil, notification unique (même si l'abonnement est désactivé) |
+| **Publication** | réglage « Les étudiants peuvent lancer » : discussions et questions / discussions seulement / questions seulement / rien |
+| **Achèvement** | règles : discussions lancées, réponses, messages, réponses acceptées |
+| **Rapport d'engagement** | par période et par groupe : indicateurs, messages par semaine, tableau triable et exportable (CSV, Excel…) par participant |
 | **Gamification** | série 🔥 de semaines consécutives avec contribution (en-tête et à côté du nom), badge « Enseignant » |
 | **Modération** | épingler, modifier ou supprimer tout message, renommer et retaguer une discussion |
 | **Accessibilité** | navigation clavier, `aria-pressed` / `aria-live`, focus visible, `prefers-reduced-motion`, rendu `<noscript>` côté serveur |
@@ -73,6 +79,8 @@ vendor/bin/phpunit --testsuite mod_hiveforum_testsuite
 En mode développeur (`$CFG->cachejs = false`), Moodle sert les fichiers `.dev.js` avec sourcemaps.
 `js/esm/src/swizzle.json` déclare quels composants un thème peut surcharger (`scripts/swizzle.mjs`).
 
+Historique des versions : voir [CHANGELOG.md](CHANGELOG.md).
+
 ## Compatibilité
 
 Moodle 5.3 minimum (`$plugin->requires = 2026100500`) : l'interface repose sur la pile React/ESM
@@ -80,8 +88,6 @@ introduite dans cette version.
 
 ## Pistes pour la suite
 
-- Mode groupes séparés / visibles (désactivé pour l'instant, `FEATURE_GROUPS => false`)
-- Mentions `@utilisateur`, digest d'activité
-- Règles d'achèvement personnalisées (nombre de messages, réponse acceptée…)
-- Rapport d'engagement (la capacité `mod/hiveforum:viewreports` existe déjà)
 - Tests Behat
+- Notation des contributions (`FEATURE_GRADE_HAS_GRADE`)
+- Heure d'envoi du résumé configurable par l'utilisateur

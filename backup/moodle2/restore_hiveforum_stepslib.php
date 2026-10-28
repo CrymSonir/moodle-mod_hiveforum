@@ -44,6 +44,9 @@ class restore_hiveforum_activity_structure_step extends restore_activity_structu
             $paths[] = new restore_path_element('hiveforum_read', $base . '/reads/read');
             $paths[] = new restore_path_element('hiveforum_subscription', $base . '/subscriptions/subscription');
             $paths[] = new restore_path_element('hiveforum_streak', '/activity/hiveforum/streaks/streak');
+            $paths[] = new restore_path_element('hiveforum_mention', $base . '/posts/post/mentions/mention');
+            $paths[] = new restore_path_element('hiveforum_forumsub', '/activity/hiveforum/forumsubs/forumsub');
+            $paths[] = new restore_path_element('hiveforum_digest', '/activity/hiveforum/digests/digest');
         }
         return $this->prepare_activity_structure($paths);
     }
@@ -73,6 +76,7 @@ class restore_hiveforum_activity_structure_step extends restore_activity_structu
         $data->hiveforum = $this->get_new_parentid('hiveforum');
         $data->userid = $this->get_mappingid('user', $data->userid);
         $data->usermodified = $this->get_mappingid('user', $data->usermodified, 0);
+        $data->groupid = empty($data->groupid) ? 0 : (int) $this->get_mappingid('group', $data->groupid, 0);
         // The first post is remapped in after_execute(), once posts are restored.
         $newid = $DB->insert_record('hiveforum_discussions', $data);
         $this->set_mapping('hiveforum_discussion', $oldid, $newid);
@@ -170,6 +174,51 @@ class restore_hiveforum_activity_structure_step extends restore_activity_structu
         $data->userid = $this->get_mappingid('user', $data->userid);
         if ($data->userid) {
             $DB->insert_record('hiveforum_streaks', $data);
+        }
+    }
+
+    /**
+     * Mention.
+     *
+     * @param array $data
+     */
+    protected function process_hiveforum_mention($data) {
+        global $DB;
+        $data = (object) $data;
+        $data->postid = $this->get_new_parentid('hiveforum_post');
+        $data->userid = $this->get_mappingid('user', $data->userid);
+        if ($data->userid) {
+            $DB->insert_record('hiveforum_mentions', $data);
+        }
+    }
+
+    /**
+     * Forum subscription.
+     *
+     * @param array $data
+     */
+    protected function process_hiveforum_forumsub($data) {
+        global $DB;
+        $data = (object) $data;
+        $data->hiveforum = $this->get_new_parentid('hiveforum');
+        $data->userid = $this->get_mappingid('user', $data->userid);
+        if ($data->userid) {
+            $DB->insert_record('hiveforum_forum_subs', $data);
+        }
+    }
+
+    /**
+     * Digest preference.
+     *
+     * @param array $data
+     */
+    protected function process_hiveforum_digest($data) {
+        global $DB;
+        $data = (object) $data;
+        $data->hiveforum = $this->get_new_parentid('hiveforum');
+        $data->userid = $this->get_mappingid('user', $data->userid);
+        if ($data->userid) {
+            $DB->insert_record('hiveforum_digests', $data);
         }
     }
 

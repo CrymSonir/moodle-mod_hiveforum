@@ -870,6 +870,7 @@
 }
 
 .hf-composer__box {
+    position: relative;
     flex: 1;
     min-width: 0;
     border: 1px solid var(--hf-line);
@@ -1512,6 +1513,289 @@
     justify-content: flex-end;
     gap: .5rem;
     margin-top: 1.25rem;
+}
+
+
+/* ========== Groups, notifications, mentions ========== */
+
+.hf-badge--group {
+    background: transparent;
+    border: 1px solid var(--hf-line);
+    color: var(--hf-muted);
+    font-weight: 500;
+}
+
+.hf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .7rem;
+    border-radius: 999px;
+    background: var(--hf-sunken);
+    color: var(--hf-muted);
+    font-size: .875rem;
+}
+
+.hf-groupmenu .groupselector {
+    margin: 0;
+}
+
+.hf-target {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    margin: 0 0 .9rem;
+    color: var(--hf-muted);
+    font-size: .875rem;
+}
+
+.hf-target select {
+    padding: .2rem .6rem;
+    border: 1px solid var(--hf-line);
+    border-radius: var(--hf-radius-sm);
+    background: var(--hf-surface);
+    color: var(--hf-ink);
+}
+
+/* Notification preferences. */
+.hf-notifmenu {
+    position: relative;
+}
+
+.hf-notifmenu .hf-notifmenu__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem .9rem;
+    border: 1px solid var(--hf-line);
+    border-radius: 999px;
+    background: var(--hf-surface);
+    color: var(--hf-ink);
+    font-weight: 500;
+}
+
+.hf-notifmenu .hf-notifmenu__trigger.is-on {
+    border-color: var(--hf-honey);
+    background: var(--hf-honey-wash);
+    color: var(--hf-honey-ink);
+}
+
+.hf-notifmenu__panel {
+    position: absolute;
+    top: calc(100% + .4rem);
+    right: 0;
+    z-index: 20;
+    width: min(22rem, calc(100vw - 2rem));
+    padding: 1rem;
+    border: 1px solid var(--hf-line);
+    border-radius: var(--hf-radius);
+    background: var(--bs-body-bg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .14);
+    animation: hf-open .18s var(--hf-ease);
+}
+
+.hf-notifmenu__text {
+    margin: .75rem 0 0;
+    color: var(--hf-muted);
+    font-size: .8125rem;
+}
+
+.hf-notifmenu__warning {
+    margin: 0 0 .75rem;
+    padding: .5rem .7rem;
+    border-radius: var(--hf-radius-sm);
+    background: rgba(var(--bs-warning-rgb), .14);
+    color: var(--bs-warning-text-emphasis);
+    font-size: .8125rem;
+}
+
+.hf-switch {
+    display: flex;
+    align-items: flex-start;
+    gap: .7rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+.hf-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hf-switch__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 2.4rem;
+    height: 1.4rem;
+    margin-top: .1rem;
+    border-radius: 999px;
+    background: var(--hf-line);
+    transition: background-color .15s;
+}
+
+.hf-switch__track::after {
+    content: "";
+    position: absolute;
+    top: .2rem;
+    left: .2rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+    transition: transform .15s var(--hf-ease);
+}
+
+.hf-switch input:checked + .hf-switch__track {
+    background: var(--hf-primary);
+}
+
+.hf-switch input:checked + .hf-switch__track::after {
+    transform: translateX(1rem);
+}
+
+.hf-switch input:focus-visible + .hf-switch__track {
+    outline: 2px solid var(--hf-primary);
+    outline-offset: 2px;
+}
+
+.hf-switch input:disabled + .hf-switch__track {
+    opacity: .55;
+}
+
+.hf-switch__label {
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+}
+
+.hf-switch__label small {
+    color: var(--hf-muted);
+}
+
+.hf-notifmenu__freq {
+    margin: 1rem 0 0;
+    padding: .75rem 0 0;
+    border: 0;
+    border-top: 1px solid var(--hf-line-soft);
+}
+
+.hf-notifmenu__freq legend {
+    float: none;
+    margin-bottom: .4rem;
+    font-size: .8125rem;
+    font-weight: 700;
+}
+
+.hf-radio {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0;
+    padding: .35rem 0;
+    cursor: pointer;
+}
+
+.hf-radio .hf-icon {
+    color: var(--hf-muted);
+}
+
+/* Mentions. */
+.hf-mentions {
+    position: absolute;
+    bottom: calc(100% + .35rem);
+    left: .5rem;
+    z-index: 15;
+    width: min(18rem, calc(100% - 1rem));
+    max-height: 16rem;
+    margin: 0;
+    padding: .3rem;
+    overflow-y: auto;
+    list-style: none;
+    border: 1px solid var(--hf-line);
+    border-radius: var(--hf-radius-sm);
+    background: var(--bs-body-bg);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .16);
+}
+
+.hf-mentions__item {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .35rem .5rem;
+    border-radius: .4rem;
+    cursor: pointer;
+}
+
+.hf-mentions__item.is-active {
+    background: rgba(var(--hf-primary-rgb), .1);
+}
+
+.hf-mentions__item .mds-avatar {
+    width: 1.6rem;
+    font-size: .6rem;
+}
+
+.hf-mentions__name {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.hf a.hf-mention {
+    padding: 0 .2em;
+    border-radius: .3em;
+    background: rgba(var(--hf-primary-rgb), .1);
+    color: var(--bs-primary-text-emphasis);
+    font-weight: 600;
+    text-decoration: none !important;
+}
+
+/* ========== Engagement report ========== */
+
+.hf-report-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: .75rem;
+    margin-bottom: 1.5rem;
+}
+
+.hf-report-tile {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--bs-border-color);
+    border-top: 3px solid #e3a008;
+    border-radius: .75rem;
+}
+
+.hf-report-tile__value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.hf-report-tile__label {
+    color: var(--bs-secondary-color);
+    font-size: .875rem;
+}
+
+.hf-report-chart {
+    max-width: 40rem;
+}
+
+.hf-report-table td.text-end,
+.hf-report-table th.text-end {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.hf-report-inactive td {
+    color: var(--bs-secondary-color);
 }
 
 /* ========== Small screens ========== */
